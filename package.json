@@ -1,0 +1,13 @@
+{
+  "name": "medizinprodukte-db",
+  "version": "1.0.0",
+  "description": "Medizinprodukte-Datenbank gemäß MPBetreibV 2025, MPDG und EU MDR 2017/745",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.10.0"
+  }
+}

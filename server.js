@@ -1,19 +1,18 @@
 /**
  * Medizinprodukte-Datenbank – Backend
- * Node.js 25.9.0 | node:sqlite (stable ab Node 22.10) | node:http
+ * Node.js 25.9.0 | Express 4 | node:sqlite (stable ab Node 22.10)
  * Gemäß MPBetreibV 2025, MPDG und EU MDR 2017/745
  */
 
-import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
+import express from 'express';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { exec } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, 'medizinprodukte.db');
-const PORT = process.env.PORT || 3000;
+const DB_PATH   = join(__dirname, 'medizinprodukte.db');
+const PORT      = process.env.PORT || 3000;
 
 // ── Datenbank-Initialisierung ─────────────────────────────────────────────────
 
@@ -71,7 +70,13 @@ db.exec(`
   )
 `);
 
-// ── Hilfsfunktionen ───────────────────────────────────────────────────────────
+// ── Express-App ───────────────────────────────────────────────────────────────
+
+const app = express();
+app.use(express.json());
+app.use(express.static(join(__dirname, 'public')));
+
+// ── Hilfsfunktion ─────────────────────────────────────────────────────────────
 
 const GERAETE_FIELDS = [
   'bezeichnung','art_typ','seriennummer','loscode','anschaffungsjahr',
@@ -82,197 +87,171 @@ const GERAETE_FIELDS = [
   'inventarnummer','verantwortliche_person','netzwerkanbindung','softwareversion','bemerkungen',
 ];
 
-function readBody(req) {
-  return new Promise(resolve => {
-    const chunks = [];
-    req.on('data', c => chunks.push(c));
-    req.on('end', () => {
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
-      catch { resolve({}); }
-    });
-  });
-}
-
-function send(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  res.end(JSON.stringify(data));
-}
-
 function nowTs() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
 }
 
-// ── HTTP-Server / Router ──────────────────────────────────────────────────────
+// ── Routen: Geräte ────────────────────────────────────────────────────────────
 
-const server = createServer(async (req, res) => {
-  const { method } = req;
-  const url = new URL(req.url, 'http://x');
-  const path = url.pathname;
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
-
-  // Frontend ausliefern
-  if (method === 'GET' && path === '/') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(readFileSync(join(__dirname, 'public', 'index.html')));
-    return;
+// Geräteliste (mit optionaler Suche)
+app.get('/api/geraete', (req, res) => {
+  const q = req.query.search?.trim();
+  if (q) {
+    const like = `%${q}%`;
+    const rows = db.prepare(`
+      SELECT id, bezeichnung, art_typ, risikoklasse, standort_raum FROM geraete
+      WHERE bezeichnung LIKE ? OR art_typ LIKE ? OR seriennummer LIKE ?
+            OR inventarnummer LIKE ? OR abteilung LIKE ?
+      ORDER BY bezeichnung
+    `).all(like, like, like, like, like);
+    return res.json(rows);
   }
-
-  try {
-    let m;
-
-    // GET /api/geraete[?search=...]
-    if (method === 'GET' && path === '/api/geraete') {
-      const q = url.searchParams.get('search')?.trim();
-      const rows = q
-        ? db.prepare(`
-            SELECT id, bezeichnung, art_typ, risikoklasse, standort_raum FROM geraete
-            WHERE bezeichnung LIKE ? OR art_typ LIKE ? OR seriennummer LIKE ?
-                  OR inventarnummer LIKE ? OR abteilung LIKE ?
-            ORDER BY bezeichnung
-          `).all(...Array(5).fill(`%${q}%`))
-        : db.prepare(
-            'SELECT id, bezeichnung, art_typ, risikoklasse, standort_raum FROM geraete ORDER BY bezeichnung'
-          ).all();
-      return send(res, 200, rows);
-    }
-
-    // POST /api/geraete
-    if (method === 'POST' && path === '/api/geraete') {
-      const body = await readBody(req);
-      if (!body.bezeichnung?.trim()) return send(res, 400, { error: 'Bezeichnung ist ein Pflichtfeld.' });
-      const fields = GERAETE_FIELDS.filter(k => k in body);
-      const ts = nowTs();
-      const result = db.prepare(
-        `INSERT INTO geraete (${fields.join(',')}, erstellt_am, geaendert_am)
-         VALUES (${fields.map(() => '?').join(',')}, ?, ?)`
-      ).run(...fields.map(k => body[k] ?? null), ts, ts);
-      return send(res, 201, { id: Number(result.lastInsertRowid) });
-    }
-
-    // /api/geraete/:id
-    if ((m = path.match(/^\/api\/geraete\/(\d+)$/))) {
-      const id = +m[1];
-      if (method === 'GET') {
-        const row = db.prepare('SELECT * FROM geraete WHERE id = ?').get(id);
-        if (!row) return send(res, 404, { error: 'Nicht gefunden' });
-        return send(res, 200, row);
-      }
-      if (method === 'PUT') {
-        const body = await readBody(req);
-        const fields = GERAETE_FIELDS.filter(k => k in body);
-        if (!fields.length) return send(res, 400, { error: 'Keine Felder zum Aktualisieren.' });
-        db.prepare(
-          `UPDATE geraete SET ${fields.map(k => `${k}=?`).join(',')}, geaendert_am=? WHERE id=?`
-        ).run(...fields.map(k => body[k] ?? null), nowTs(), id);
-        return send(res, 200, { success: true });
-      }
-      if (method === 'DELETE') {
-        db.prepare('DELETE FROM geraete WHERE id = ?').run(id);
-        return send(res, 200, { success: true });
-      }
-    }
-
-    // GET /api/geraete/:id/pruefungen
-    if ((m = path.match(/^\/api\/geraete\/(\d+)\/pruefungen$/)) && method === 'GET') {
-      return send(res, 200, db.prepare(`
-        SELECT id, art, datum, naechste_faelligkeit, pruefer, ergebnis
-        FROM pruefungen WHERE geraet_id = ? ORDER BY datum DESC
-      `).all(+m[1]));
-    }
-
-    // GET /api/geraete/:id/einweisungen
-    if ((m = path.match(/^\/api\/geraete\/(\d+)\/einweisungen$/)) && method === 'GET') {
-      return send(res, 200, db.prepare(`
-        SELECT id, datum, eingewiesene_person, beauftragte_person,
-               CASE funktionspruefung WHEN 1 THEN 'Ja' ELSE 'Nein' END AS funktionspruefung
-        FROM einweisungen WHERE geraet_id = ? ORDER BY datum DESC
-      `).all(+m[1]));
-    }
-
-    // GET /api/geraete/:id/vorkommnisse
-    if ((m = path.match(/^\/api\/geraete\/(\d+)\/vorkommnisse$/)) && method === 'GET') {
-      return send(res, 200, db.prepare(`
-        SELECT id, datum, art_stoerung, meldung_behoerde, meldung_hersteller
-        FROM vorkommnisse WHERE geraet_id = ? ORDER BY datum DESC
-      `).all(+m[1]));
-    }
-
-    // POST /api/pruefungen
-    if (method === 'POST' && path === '/api/pruefungen') {
-      const b = await readBody(req);
-      if (!b.art || !b.datum) return send(res, 400, { error: 'Art und Datum sind Pflichtfelder.' });
-      const r = db.prepare(`
-        INSERT INTO pruefungen (geraet_id, art, datum, naechste_faelligkeit, pruefer, ergebnis,
-          messwerte, messverfahren, maengel, korrektivmassnahmen, bemerkungen)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)
-      `).run(b.geraet_id, b.art, b.datum,
-             b.naechste_faelligkeit||null, b.pruefer||null, b.ergebnis||null,
-             b.messwerte||null, b.messverfahren||null, b.maengel||null,
-             b.korrektivmassnahmen||null, b.bemerkungen||null);
-      return send(res, 201, { id: Number(r.lastInsertRowid) });
-    }
-
-    // DELETE /api/pruefungen/:id
-    if ((m = path.match(/^\/api\/pruefungen\/(\d+)$/)) && method === 'DELETE') {
-      db.prepare('DELETE FROM pruefungen WHERE id = ?').run(+m[1]);
-      return send(res, 200, { success: true });
-    }
-
-    // POST /api/einweisungen
-    if (method === 'POST' && path === '/api/einweisungen') {
-      const b = await readBody(req);
-      if (!b.datum) return send(res, 400, { error: 'Datum ist ein Pflichtfeld.' });
-      const r = db.prepare(`
-        INSERT INTO einweisungen (geraet_id, datum, eingewiesene_person, beauftragte_person,
-          funktionspruefung, bemerkungen)
-        VALUES (?,?,?,?,?,?)
-      `).run(b.geraet_id, b.datum,
-             b.eingewiesene_person||null, b.beauftragte_person||null,
-             b.funktionspruefung ? 1 : 0, b.bemerkungen||null);
-      return send(res, 201, { id: Number(r.lastInsertRowid) });
-    }
-
-    // DELETE /api/einweisungen/:id
-    if ((m = path.match(/^\/api\/einweisungen\/(\d+)$/)) && method === 'DELETE') {
-      db.prepare('DELETE FROM einweisungen WHERE id = ?').run(+m[1]);
-      return send(res, 200, { success: true });
-    }
-
-    // POST /api/vorkommnisse
-    if (method === 'POST' && path === '/api/vorkommnisse') {
-      const b = await readBody(req);
-      if (!b.datum) return send(res, 400, { error: 'Datum ist ein Pflichtfeld.' });
-      const r = db.prepare(`
-        INSERT INTO vorkommnisse (geraet_id, datum, art_stoerung, folgen,
-          meldung_behoerde, meldung_hersteller, korrektivmassnahmen, bemerkungen)
-        VALUES (?,?,?,?,?,?,?,?)
-      `).run(b.geraet_id, b.datum,
-             b.art_stoerung||null, b.folgen||null,
-             b.meldung_behoerde||null, b.meldung_hersteller||null,
-             b.korrektivmassnahmen||null, b.bemerkungen||null);
-      return send(res, 201, { id: Number(r.lastInsertRowid) });
-    }
-
-    // DELETE /api/vorkommnisse/:id
-    if ((m = path.match(/^\/api\/vorkommnisse\/(\d+)$/)) && method === 'DELETE') {
-      db.prepare('DELETE FROM vorkommnisse WHERE id = ?').run(+m[1]);
-      return send(res, 200, { success: true });
-    }
-
-    send(res, 404, { error: 'Not found' });
-
-  } catch (err) {
-    console.error(err);
-    send(res, 500, { error: err.message });
-  }
+  const rows = db.prepare(
+    'SELECT id, bezeichnung, art_typ, risikoklasse, standort_raum FROM geraete ORDER BY bezeichnung'
+  ).all();
+  res.json(rows);
 });
 
-server.listen(PORT, () => {
+// Einzelnes Gerät
+app.get('/api/geraete/:id', (req, res) => {
+  const row = db.prepare('SELECT * FROM geraete WHERE id = ?').get(+req.params.id);
+  if (!row) return res.status(404).json({ error: 'Nicht gefunden' });
+  res.json(row);
+});
+
+// Neues Gerät anlegen
+app.post('/api/geraete', (req, res) => {
+  const body = req.body;
+  if (!body.bezeichnung?.trim()) {
+    return res.status(400).json({ error: 'Bezeichnung ist ein Pflichtfeld.' });
+  }
+  const fields = GERAETE_FIELDS.filter(k => k in body);
+  const ts     = nowTs();
+  const result = db.prepare(
+    `INSERT INTO geraete (${fields.join(',')}, erstellt_am, geaendert_am)
+     VALUES (${fields.map(() => '?').join(',')}, ?, ?)`
+  ).run(...fields.map(k => body[k] ?? null), ts, ts);
+  res.status(201).json({ id: Number(result.lastInsertRowid) });
+});
+
+// Gerät aktualisieren
+app.put('/api/geraete/:id', (req, res) => {
+  const body   = req.body;
+  const fields = GERAETE_FIELDS.filter(k => k in body);
+  if (!fields.length) return res.status(400).json({ error: 'Keine Felder zum Aktualisieren.' });
+  db.prepare(
+    `UPDATE geraete SET ${fields.map(k => `${k}=?`).join(',')}, geaendert_am=? WHERE id=?`
+  ).run(...fields.map(k => body[k] ?? null), nowTs(), +req.params.id);
+  res.json({ success: true });
+});
+
+// Gerät löschen (ON DELETE CASCADE entfernt Einweisungen, Prüfungen, Vorkommnisse)
+app.delete('/api/geraete/:id', (req, res) => {
+  db.prepare('DELETE FROM geraete WHERE id = ?').run(+req.params.id);
+  res.json({ success: true });
+});
+
+// ── Routen: Prüfungen ─────────────────────────────────────────────────────────
+
+app.get('/api/geraete/:id/pruefungen', (req, res) => {
+  const rows = db.prepare(`
+    SELECT id, art, datum, naechste_faelligkeit, pruefer, ergebnis
+    FROM pruefungen WHERE geraet_id = ? ORDER BY datum DESC
+  `).all(+req.params.id);
+  res.json(rows);
+});
+
+app.post('/api/pruefungen', (req, res) => {
+  const b = req.body;
+  if (!b.art || !b.datum) {
+    return res.status(400).json({ error: 'Art und Datum sind Pflichtfelder.' });
+  }
+  const result = db.prepare(`
+    INSERT INTO pruefungen
+      (geraet_id, art, datum, naechste_faelligkeit, pruefer, ergebnis,
+       messwerte, messverfahren, maengel, korrektivmassnahmen, bemerkungen)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    b.geraet_id, b.art, b.datum,
+    b.naechste_faelligkeit || null, b.pruefer       || null,
+    b.ergebnis             || null, b.messwerte      || null,
+    b.messverfahren        || null, b.maengel         || null,
+    b.korrektivmassnahmen  || null, b.bemerkungen     || null,
+  );
+  res.status(201).json({ id: Number(result.lastInsertRowid) });
+});
+
+app.delete('/api/pruefungen/:id', (req, res) => {
+  db.prepare('DELETE FROM pruefungen WHERE id = ?').run(+req.params.id);
+  res.json({ success: true });
+});
+
+// ── Routen: Einweisungen ──────────────────────────────────────────────────────
+
+app.get('/api/geraete/:id/einweisungen', (req, res) => {
+  const rows = db.prepare(`
+    SELECT id, datum, eingewiesene_person, beauftragte_person,
+           CASE funktionspruefung WHEN 1 THEN 'Ja' ELSE 'Nein' END AS funktionspruefung
+    FROM einweisungen WHERE geraet_id = ? ORDER BY datum DESC
+  `).all(+req.params.id);
+  res.json(rows);
+});
+
+app.post('/api/einweisungen', (req, res) => {
+  const b = req.body;
+  if (!b.datum) return res.status(400).json({ error: 'Datum ist ein Pflichtfeld.' });
+  const result = db.prepare(`
+    INSERT INTO einweisungen
+      (geraet_id, datum, eingewiesene_person, beauftragte_person, funktionspruefung, bemerkungen)
+    VALUES (?,?,?,?,?,?)
+  `).run(
+    b.geraet_id, b.datum,
+    b.eingewiesene_person || null, b.beauftragte_person || null,
+    b.funktionspruefung ? 1 : 0,   b.bemerkungen        || null,
+  );
+  res.status(201).json({ id: Number(result.lastInsertRowid) });
+});
+
+app.delete('/api/einweisungen/:id', (req, res) => {
+  db.prepare('DELETE FROM einweisungen WHERE id = ?').run(+req.params.id);
+  res.json({ success: true });
+});
+
+// ── Routen: Vorkommnisse ──────────────────────────────────────────────────────
+
+app.get('/api/geraete/:id/vorkommnisse', (req, res) => {
+  const rows = db.prepare(`
+    SELECT id, datum, art_stoerung, meldung_behoerde, meldung_hersteller
+    FROM vorkommnisse WHERE geraet_id = ? ORDER BY datum DESC
+  `).all(+req.params.id);
+  res.json(rows);
+});
+
+app.post('/api/vorkommnisse', (req, res) => {
+  const b = req.body;
+  if (!b.datum) return res.status(400).json({ error: 'Datum ist ein Pflichtfeld.' });
+  const result = db.prepare(`
+    INSERT INTO vorkommnisse
+      (geraet_id, datum, art_stoerung, folgen,
+       meldung_behoerde, meldung_hersteller, korrektivmassnahmen, bemerkungen)
+    VALUES (?,?,?,?,?,?,?,?)
+  `).run(
+    b.geraet_id, b.datum,
+    b.art_stoerung         || null, b.folgen              || null,
+    b.meldung_behoerde     || null, b.meldung_hersteller  || null,
+    b.korrektivmassnahmen  || null, b.bemerkungen          || null,
+  );
+  res.status(201).json({ id: Number(result.lastInsertRowid) });
+});
+
+app.delete('/api/vorkommnisse/:id', (req, res) => {
+  db.prepare('DELETE FROM vorkommnisse WHERE id = ?').run(+req.params.id);
+  res.json({ success: true });
+});
+
+// ── Server starten ────────────────────────────────────────────────────────────
+
+app.listen(PORT, () => {
   const url = `http://localhost:${PORT}`;
   console.log('\nMedizinprodukte-Datenbank (MPBetreibV 2025)');
   console.log(`Läuft auf:  ${url}`);

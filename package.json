@@ -5,9 +5,13 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "install-deps": "npm install"
   },
   "engines": {
     "node": ">=22.10.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
   }
 }

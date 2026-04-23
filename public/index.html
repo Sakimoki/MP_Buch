@@ -284,6 +284,39 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
 }
 .form-row textarea { resize: vertical; min-height: 52px; }
 .form-row input[type=checkbox] { margin-top: 5px; width: 16px; height: 16px; cursor: pointer; }
+
+/* ── Dokumente ── */
+.dok-link {
+  color: var(--c-toolbar);
+  text-decoration: none;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.dok-link:hover { text-decoration: underline; }
+.dok-upload-btn {
+  background: none;
+  border: 1px dashed #aaa;
+  color: #888;
+  padding: 1px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.dok-upload-btn:hover { border-color: var(--c-toolbar); color: var(--c-toolbar); }
+.dok-del-btn {
+  background: none;
+  border: none;
+  color: var(--c-del);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.dok-del-btn:hover { text-decoration: underline; }
+#handbuch-section { padding: 4px 8px 12px; }
+#handbuch-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+#handbuch-table th { background: #e0e0e0; padding: 3px 6px; text-align: left; border-bottom: 2px solid #bbb; }
+#handbuch-table td { padding: 3px 6px; border-bottom: 1px solid #eee; }
+.upload-progress { font-size: 11px; color: #888; margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -337,6 +370,17 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
       <div id="detail-content">
         <p id="detail-placeholder">Bitte ein Gerät aus der Liste auswählen.</p>
       </div>
+      <div id="handbuch-section" style="display:none">
+        <div class="sec-hd" style="margin-top:10px">
+          Handbücher
+          <button class="dok-upload-btn" style="margin-left:10px" onclick="triggerUpload('handbuch', null)">+ Handbuch hochladen</button>
+          <span id="handbuch-progress" class="upload-progress"></span>
+        </div>
+        <table id="handbuch-table">
+          <thead><tr><th>Dateiname</th><th style="width:140px">Hochgeladen am</th><th style="width:80px"></th></tr></thead>
+          <tbody id="handbuch-tbody"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Tab: STK / MTK / Wartung -->
@@ -355,6 +399,7 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
               <th style="width:115px">Nächste Fälligkeit</th>
               <th>Prüfer</th>
               <th style="width:130px">Ergebnis</th>
+              <th style="width:110px">Protokoll</th>
             </tr>
           </thead>
           <tbody id="pruef-tbody"></tbody>
@@ -377,6 +422,7 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
               <th>Eingewiesene Person</th>
               <th>Beauftragte Person</th>
               <th style="width:110px">Funktionsprüfung</th>
+              <th style="width:110px">Protokoll</th>
             </tr>
           </thead>
           <tbody id="einw-tbody"></tbody>
@@ -587,16 +633,21 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
   </div>
 </dialog>
 
+<!-- Versteckter File-Input für PDF-Upload -->
+<input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileSelected(event)">
+
 <!-- ── JavaScript ─────────────────────────────────────────────────────────── -->
 <script>
 'use strict';
 
 // ── State ────────────────────────────────────────────────────────────────────
-let currentGeraetId = null;
-let currentPruefId  = null;
-let currentEinwId   = null;
-let currentVorkId   = null;
-let editMode        = false;
+let currentGeraetId  = null;
+let currentPruefId   = null;
+let currentEinwId    = null;
+let currentVorkId    = null;
+let editMode         = false;
+// Upload-Kontext: wird beim Klick auf Upload-Button gesetzt
+let uploadContext    = { typ: null, referenzId: null, progressId: null };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) {
@@ -657,6 +708,7 @@ async function selectGeraet(id, trEl) {
     loadPruefungen(id),
     loadEinweisungen(id),
     loadVorkommnisse(id),
+    loadHandbuecher(id),
   ]);
 }
 
@@ -712,11 +764,17 @@ async function loadPruefungen(id) {
   const tbody = document.getElementById('pruef-tbody');
   tbody.innerHTML = '';
   for (const p of data) {
+    const dok = await (await api('GET', `/api/pruefungen/${p.id}/dokument`)).json();
     const tr = document.createElement('tr');
     const f = p.naechste_faelligkeit || '';
     if (f && f < today) tr.classList.add('overdue');
     else if (f)         tr.classList.add('ok-row');
-    tr.innerHTML = `<td>${p.id}</td><td>${esc(p.art)}</td><td>${esc(p.datum)}</td><td>${esc(p.naechste_faelligkeit)}</td><td>${esc(p.pruefer)}</td><td>${esc(p.ergebnis)}</td>`;
+    const dokCell = dok
+      ? `<a class="dok-link" href="/uploads/wartungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
+         <button class="dok-del-btn" onclick="deleteDokument(${dok.id}, event)" title="Dokument löschen">✕</button>`
+      : `<button class="dok-upload-btn" onclick="triggerUpload('wartungsprotokoll', ${p.id}, 'pruef-prog-${p.id}', event)">↑ Hochladen</button>
+         <span id="pruef-prog-${p.id}" class="upload-progress"></span>`;
+    tr.innerHTML = `<td>${p.id}</td><td>${esc(p.art)}</td><td>${esc(p.datum)}</td><td>${esc(p.naechste_faelligkeit)}</td><td>${esc(p.pruefer)}</td><td>${esc(p.ergebnis)}</td><td>${dokCell}</td>`;
     tr.addEventListener('click', () => {
       document.querySelectorAll('#pruef-tbody tr').forEach(r => r.classList.remove('sel'));
       tr.classList.add('sel');
@@ -732,8 +790,14 @@ async function loadEinweisungen(id) {
   const tbody = document.getElementById('einw-tbody');
   tbody.innerHTML = '';
   for (const e of data) {
+    const dok = await (await api('GET', `/api/einweisungen/${e.id}/dokument`)).json();
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${e.id}</td><td>${esc(e.datum)}</td><td>${esc(e.eingewiesene_person)}</td><td>${esc(e.beauftragte_person)}</td><td style="text-align:center">${esc(e.funktionspruefung)}</td>`;
+    const dokCell = dok
+      ? `<a class="dok-link" href="/uploads/einweisungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
+         <button class="dok-del-btn" onclick="deleteDokument(${dok.id}, event)" title="Dokument löschen">✕</button>`
+      : `<button class="dok-upload-btn" onclick="triggerUpload('einweisungsprotokoll', ${e.id}, 'einw-prog-${e.id}', event)">↑ Hochladen</button>
+         <span id="einw-prog-${e.id}" class="upload-progress"></span>`;
+    tr.innerHTML = `<td>${e.id}</td><td>${esc(e.datum)}</td><td>${esc(e.eingewiesene_person)}</td><td>${esc(e.beauftragte_person)}</td><td style="text-align:center">${esc(e.funktionspruefung)}</td><td>${dokCell}</td>`;
     tr.addEventListener('click', () => {
       document.querySelectorAll('#einw-tbody tr').forEach(r => r.classList.remove('sel'));
       tr.classList.add('sel');
@@ -790,11 +854,12 @@ async function openEditGeraet() {
 
 async function deleteGeraet() {
   if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  if (!confirm('Gerät und alle zugehörigen Einträge (Prüfungen, Einweisungen, Vorkommnisse) wirklich löschen?')) return;
+  if (!confirm('Gerät und alle zugehörigen Einträge (Prüfungen, Einweisungen, Vorkommnisse, Dokumente) wirklich löschen?')) return;
   await api('DELETE', `/api/geraete/${currentGeraetId}`);
   currentGeraetId = null;
   document.getElementById('detail-content').innerHTML = '<p id="detail-placeholder" style="color:#aaa;text-align:center;margin-top:60px;font-size:14px">Bitte ein Gerät aus der Liste auswählen.</p>';
-  ['pruef-tbody','einw-tbody','vork-tbody'].forEach(id => document.getElementById(id).innerHTML = '');
+  document.getElementById('handbuch-section').style.display = 'none';
+  ['pruef-tbody','einw-tbody','vork-tbody','handbuch-tbody'].forEach(id => document.getElementById(id).innerHTML = '');
   loadGeraete();
 }
 
@@ -926,6 +991,91 @@ async function deleteVorkommnis() {
   await api('DELETE', `/api/vorkommnisse/${currentVorkId}`);
   currentVorkId = null;
   loadVorkommnisse(currentGeraetId);
+}
+
+// ── Dokumente ─────────────────────────────────────────────────────────────────
+
+async function loadHandbuecher(geraetId) {
+  const section = document.getElementById('handbuch-section');
+  const tbody   = document.getElementById('handbuch-tbody');
+  section.style.display = 'block';
+  tbody.innerHTML = '';
+  const data = await (await api('GET', `/api/geraete/${geraetId}/dokumente`)).json();
+  const hbs  = data.filter(d => d.typ === 'handbuch');
+  if (!hbs.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:#aaa;text-align:center">Noch keine Handbücher hochgeladen.</td></tr>';
+    return;
+  }
+  for (const d of hbs) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><a class="dok-link" href="/uploads/handbuecher/${esc(d.dateiname)}" target="_blank">📄 ${esc(d.originalname)}</a></td>
+      <td>${esc(d.hochgeladen_am)}</td>
+      <td><button class="dok-del-btn" onclick="deleteDokument(${d.id}, event)">✕ Löschen</button></td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function triggerUpload(typ, referenzId, progressId, evt) {
+  if (evt) evt.stopPropagation();
+  uploadContext = { typ, referenzId: referenzId ?? null, progressId: progressId || 'handbuch-progress' };
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-input').click();
+}
+
+async function handleFileSelected(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+
+  const { typ, referenzId, progressId } = uploadContext;
+  const prog = progressId ? document.getElementById(progressId) : null;
+  if (prog) prog.textContent = 'Wird hochgeladen…';
+
+  const MAX = 25 * 1024 * 1024;
+  if (file.size > MAX) {
+    if (prog) prog.textContent = '';
+    alert('Die Datei überschreitet 25 MB und kann nicht hochgeladen werden.');
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    if (prog) prog.textContent = '';
+    alert('Nur PDF-Dateien sind erlaubt.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const base64 = reader.result.split(',')[1];
+    const res = await api('POST', '/api/dokumente/upload', {
+      typ,
+      geraet_id:    currentGeraetId,
+      referenz_id:  referenzId,
+      originalname: file.name,
+      data:         base64,
+    });
+    if (prog) prog.textContent = '';
+    if (!res.ok) {
+      alert((await res.json()).error || 'Upload fehlgeschlagen.');
+      return;
+    }
+    setStatus(`Dokument "${file.name}" hochgeladen.`);
+    if (typ === 'handbuch')             await loadHandbuecher(currentGeraetId);
+    if (typ === 'wartungsprotokoll')    await loadPruefungen(currentGeraetId);
+    if (typ === 'einweisungsprotokoll') await loadEinweisungen(currentGeraetId);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function deleteDokument(dokId, evt) {
+  if (evt) evt.stopPropagation();
+  if (!confirm('Dokument wirklich löschen?')) return;
+  await api('DELETE', `/api/dokumente/${dokId}`);
+  setStatus('Dokument gelöscht.');
+  await Promise.all([
+    loadHandbuecher(currentGeraetId),
+    loadPruefungen(currentGeraetId),
+    loadEinweisungen(currentGeraetId),
+  ]);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

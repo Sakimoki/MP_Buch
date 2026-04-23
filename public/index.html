@@ -285,6 +285,92 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
 .form-row textarea { resize: vertical; min-height: 52px; }
 .form-row input[type=checkbox] { margin-top: 5px; width: 16px; height: 16px; cursor: pointer; }
 
+/* ── Mobile (≤768px) ── */
+@media (max-width: 768px) {
+  body { overflow: auto; height: auto; font-size: 15px; }
+  #main { flex-direction: column; padding: 0; gap: 0; overflow: visible; }
+  #list-panel  { width: 100%; border: none; border-bottom: 1px solid var(--c-border); max-height: none; }
+  #detail-panel { display: none; }
+  body.mobile-detail-active #list-panel  { display: none; }
+  body.mobile-detail-active #detail-panel { display: flex; min-height: calc(100dvh - 48px - 56px); }
+
+  /* Toolbar */
+  #toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
+  #search-wrap { width: 100%; margin-left: 0 !important; }
+  #search-input { width: 100%; max-width: none; }
+  #btn-bearbeiten, #btn-loeschen { display: none; }
+  body.mobile-detail-active #btn-bearbeiten,
+  body.mobile-detail-active #btn-loeschen { display: inline-block; }
+  #btn-neu { display: none; }
+  body.mobile-detail-active #btn-neu { display: none; }
+  .tbtn, .sub-toolbar button, .dlg-ft button { min-height: 44px; font-size: 14px; padding: 6px 14px; }
+
+  /* Statusbar */
+  #statusbar { padding: 4px 10px; font-size: 12px; }
+
+  /* Tabs: unten fixiert */
+  #tabs {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 100; border-top: 2px solid var(--c-toolbar);
+    border-bottom: none; background: #fff; height: 56px;
+  }
+  .tab-btn {
+    flex: 1; flex-direction: column; font-size: 10px;
+    padding: 4px 2px; gap: 1px; display: flex;
+    align-items: center; justify-content: center; min-height: 56px;
+    border-right: 1px solid #e0e0e0;
+  }
+  .tab-btn .tab-icon { font-size: 18px; }
+  .tab-pane { padding-bottom: 64px; }
+  #tab-detail { padding-bottom: 64px; }
+
+  /* Karten-Ansicht */
+  .mobile-cards { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+  .mobile-card {
+    background: #fff; border: 1px solid var(--c-border);
+    border-radius: 6px; padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08); cursor: pointer;
+  }
+  .mobile-card.overdue { border-left: 4px solid var(--c-del); background: var(--c-overdue); }
+  .mobile-card.ok-row  { border-left: 4px solid var(--c-add); background: var(--c-ok); }
+  .mobile-card.sel     { border-color: var(--c-toolbar); background: #e8f4fb; }
+  .mc-title  { font-weight: bold; font-size: 14px; margin-bottom: 3px; }
+  .mc-date   { color: #555; font-size: 12px; }
+  .mc-detail { color: #666; font-size: 12px; margin-top: 2px; }
+  .mc-row    { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 4px; }
+  .dt { display: none; }
+
+  /* Vollbild-Dialoge */
+  dialog {
+    width: 100vw !important; max-width: 100vw;
+    height: 100dvh; max-height: 100dvh;
+    border-radius: 0; margin: 0; inset: 0;
+  }
+  .dlg-body { max-height: calc(100dvh - 100px); }
+  .form-row { flex-direction: column; }
+  .form-row label { width: 100%; min-width: unset; padding-bottom: 3px; }
+  .form-row input[type=text],
+  .form-row input[type=date],
+  .form-row select,
+  .form-row textarea { width: 100%; }
+
+  /* Gerätedaten-Tab */
+  .frow { flex-direction: column; padding: 4px 8px; }
+  .flabel { width: 100%; min-width: unset; color: #888; font-size: 11px; padding-top: 4px; }
+  .fval { font-size: 14px; }
+  .sec-hd { font-size: 13px; }
+
+  /* Handbücher */
+  #handbuch-table td, #handbuch-table th { font-size: 12px; padding: 5px 4px; }
+
+  /* Sub-toolbar */
+  .sub-toolbar { flex-wrap: wrap; }
+  .sub-toolbar button { min-height: 40px; }
+}
+
+/* Karten-Container auf Desktop ausblenden */
+.mobile-cards { display: none; }
+
 /* ── Dokumente ── */
 .dok-link {
   color: var(--c-toolbar);
@@ -324,9 +410,10 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
 <!-- ── Toolbar ─────────────────────────────────────────────────────────────── -->
 <header id="toolbar">
   <span id="app-title">Medizinprodukte-Datenbank</span>
-  <button class="tbtn add" onclick="openNewGeraet()">+ Neues Gerät</button>
-  <button class="tbtn"     onclick="openEditGeraet()">Bearbeiten</button>
-  <button class="tbtn del" onclick="deleteGeraet()">Löschen</button>
+  <button id="btn-zurueck"    class="tbtn" onclick="goBackToList()" style="display:none">← Zurück</button>
+  <button id="btn-neu"        class="tbtn add" onclick="openNewGeraet()">+ Neues Gerät</button>
+  <button id="btn-bearbeiten" class="tbtn"     onclick="openEditGeraet()">Bearbeiten</button>
+  <button id="btn-loeschen"   class="tbtn del" onclick="deleteGeraet()">Löschen</button>
   <div id="search-wrap">
     <label for="search-input">Suche:</label>
     <input id="search-input" type="text" placeholder="Bezeichnung, Typ, SN …"
@@ -359,10 +446,10 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
   <!-- Rechte Spalte: Detail-Tabs -->
   <div id="detail-panel">
     <div id="tabs">
-      <button class="tab-btn active" onclick="showTab('detail')">Gerätedaten</button>
-      <button class="tab-btn"        onclick="showTab('pruef')">STK / MTK / Wartung</button>
-      <button class="tab-btn"        onclick="showTab('einw')">Einweisungen</button>
-      <button class="tab-btn"        onclick="showTab('vork')">Vorkommnisse</button>
+      <button class="tab-btn active" onclick="showTab('detail')"><span class="tab-icon">🗂️</span><span>Gerätedaten</span></button>
+      <button class="tab-btn"        onclick="showTab('pruef')"><span class="tab-icon">🔧</span><span>STK / Wartung</span></button>
+      <button class="tab-btn"        onclick="showTab('einw')"><span class="tab-icon">👤</span><span>Einweisungen</span></button>
+      <button class="tab-btn"        onclick="showTab('vork')"><span class="tab-icon">⚠️</span><span>Vorkommnisse</span></button>
     </div>
 
     <!-- Tab: Gerätedaten -->
@@ -404,6 +491,7 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
           </thead>
           <tbody id="pruef-tbody"></tbody>
         </table>
+        <div id="pruef-cards" class="mobile-cards"></div>
       </div>
     </div>
 
@@ -427,6 +515,7 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
           </thead>
           <tbody id="einw-tbody"></tbody>
         </table>
+        <div id="einw-cards" class="mobile-cards"></div>
       </div>
     </div>
 
@@ -449,6 +538,7 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
           </thead>
           <tbody id="vork-tbody"></tbody>
         </table>
+        <div id="vork-cards" class="mobile-cards"></div>
       </div>
     </div>
   </div>
@@ -670,6 +760,15 @@ function setVal(id, v) {
 }
 function clearIds(...ids) { ids.forEach(id => { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = false; else el.value = ''; } }); }
 
+// ── Mobile helpers ────────────────────────────────────────────────────────────
+function isMobile() { return window.matchMedia('(max-width: 768px)').matches; }
+
+function goBackToList() {
+  document.body.classList.remove('mobile-detail-active');
+  document.getElementById('btn-zurueck').style.display = 'none';
+  document.getElementById('btn-neu').style.display = '';
+}
+
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function showTab(name) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
@@ -703,6 +802,11 @@ async function selectGeraet(id, trEl) {
   currentPruefId = currentEinwId = currentVorkId = null;
   document.querySelectorAll('#geraete-tbody tr').forEach(r => r.classList.remove('sel'));
   if (trEl) trEl.classList.add('sel');
+  if (isMobile()) {
+    document.body.classList.add('mobile-detail-active');
+    document.getElementById('btn-zurueck').style.display = 'inline-block';
+    document.getElementById('btn-neu').style.display = 'none';
+  }
   await Promise.all([
     loadDetail(id),
     loadPruefungen(id),
@@ -761,19 +865,23 @@ async function loadDetail(id) {
 async function loadPruefungen(id) {
   const data = await (await api('GET', `/api/geraete/${id}/pruefungen`)).json();
   const today = new Date().toISOString().substring(0, 10);
-  const tbody = document.getElementById('pruef-tbody');
+  const tbody  = document.getElementById('pruef-tbody');
+  const cards  = document.getElementById('pruef-cards');
   tbody.innerHTML = '';
+  cards.innerHTML = '';
   for (const p of data) {
     const dok = await (await api('GET', `/api/pruefungen/${p.id}/dokument`)).json();
-    const tr = document.createElement('tr');
-    const f = p.naechste_faelligkeit || '';
-    if (f && f < today) tr.classList.add('overdue');
-    else if (f)         tr.classList.add('ok-row');
+    const f   = p.naechste_faelligkeit || '';
+    const fCls = (f && f < today) ? ' overdue' : (f ? ' ok-row' : '');
     const dokCell = dok
       ? `<a class="dok-link" href="/uploads/wartungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
          <button class="dok-del-btn" onclick="deleteDokument(${dok.id}, event)" title="Dokument löschen">✕</button>`
       : `<button class="dok-upload-btn" onclick="triggerUpload('wartungsprotokoll', ${p.id}, 'pruef-prog-${p.id}', event)">↑ Hochladen</button>
          <span id="pruef-prog-${p.id}" class="upload-progress"></span>`;
+
+    // Tabellenzeile (Desktop)
+    const tr = document.createElement('tr');
+    if (fCls) tr.className = fCls.trim();
     tr.innerHTML = `<td>${p.id}</td><td>${esc(p.art)}</td><td>${esc(p.datum)}</td><td>${esc(p.naechste_faelligkeit)}</td><td>${esc(p.pruefer)}</td><td>${esc(p.ergebnis)}</td><td>${dokCell}</td>`;
     tr.addEventListener('click', () => {
       document.querySelectorAll('#pruef-tbody tr').forEach(r => r.classList.remove('sel'));
@@ -781,22 +889,44 @@ async function loadPruefungen(id) {
       currentPruefId = p.id;
     });
     tbody.appendChild(tr);
+
+    // Karte (Mobil)
+    const card = document.createElement('div');
+    card.className = `mobile-card${fCls}`;
+    card.innerHTML = `
+      <div class="mc-title">🔧 ${esc(p.art)}</div>
+      <div class="mc-date">${esc(p.datum)}${f ? ` &nbsp;→&nbsp; ${esc(f)}` : ''}</div>
+      ${p.pruefer ? `<div class="mc-detail">Prüfer: ${esc(p.pruefer)}</div>` : ''}
+      <div class="mc-row">
+        <span>${p.ergebnis ? (fCls.includes('overdue') ? '❌' : '✅') + ' ' + esc(p.ergebnis) : ''}</span>
+        <span>${dokCell}</span>
+      </div>`;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#pruef-cards .mobile-card').forEach(c => c.classList.remove('sel'));
+      card.classList.add('sel');
+      currentPruefId = p.id;
+    });
+    cards.appendChild(card);
   }
 }
 
 // ── Einweisungen ──────────────────────────────────────────────────────────────
 async function loadEinweisungen(id) {
-  const data = await (await api('GET', `/api/geraete/${id}/einweisungen`)).json();
+  const data  = await (await api('GET', `/api/geraete/${id}/einweisungen`)).json();
   const tbody = document.getElementById('einw-tbody');
+  const cards = document.getElementById('einw-cards');
   tbody.innerHTML = '';
+  cards.innerHTML = '';
   for (const e of data) {
     const dok = await (await api('GET', `/api/einweisungen/${e.id}/dokument`)).json();
-    const tr = document.createElement('tr');
     const dokCell = dok
       ? `<a class="dok-link" href="/uploads/einweisungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
          <button class="dok-del-btn" onclick="deleteDokument(${dok.id}, event)" title="Dokument löschen">✕</button>`
       : `<button class="dok-upload-btn" onclick="triggerUpload('einweisungsprotokoll', ${e.id}, 'einw-prog-${e.id}', event)">↑ Hochladen</button>
          <span id="einw-prog-${e.id}" class="upload-progress"></span>`;
+
+    // Tabellenzeile (Desktop)
+    const tr = document.createElement('tr');
     tr.innerHTML = `<td>${e.id}</td><td>${esc(e.datum)}</td><td>${esc(e.eingewiesene_person)}</td><td>${esc(e.beauftragte_person)}</td><td style="text-align:center">${esc(e.funktionspruefung)}</td><td>${dokCell}</td>`;
     tr.addEventListener('click', () => {
       document.querySelectorAll('#einw-tbody tr').forEach(r => r.classList.remove('sel'));
@@ -804,15 +934,36 @@ async function loadEinweisungen(id) {
       currentEinwId = e.id;
     });
     tbody.appendChild(tr);
+
+    // Karte (Mobil)
+    const card = document.createElement('div');
+    card.className = 'mobile-card';
+    card.innerHTML = `
+      <div class="mc-title">👤 ${esc(e.eingewiesene_person) || '–'}</div>
+      <div class="mc-date">${esc(e.datum)}</div>
+      ${e.beauftragte_person ? `<div class="mc-detail">Beauftragt: ${esc(e.beauftragte_person)}</div>` : ''}
+      <div class="mc-row">
+        <span>${e.funktionspruefung === 'Ja' ? '✅ Funktionsprüfung' : ''}</span>
+        <span>${dokCell}</span>
+      </div>`;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#einw-cards .mobile-card').forEach(c => c.classList.remove('sel'));
+      card.classList.add('sel');
+      currentEinwId = e.id;
+    });
+    cards.appendChild(card);
   }
 }
 
 // ── Vorkommnisse ──────────────────────────────────────────────────────────────
 async function loadVorkommnisse(id) {
-  const data = await (await api('GET', `/api/geraete/${id}/vorkommnisse`)).json();
+  const data  = await (await api('GET', `/api/geraete/${id}/vorkommnisse`)).json();
   const tbody = document.getElementById('vork-tbody');
+  const cards = document.getElementById('vork-cards');
   tbody.innerHTML = '';
+  cards.innerHTML = '';
   for (const v of data) {
+    // Tabellenzeile (Desktop)
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${v.id}</td><td>${esc(v.datum)}</td><td>${esc(v.art_stoerung)}</td><td>${esc(v.meldung_behoerde)}</td><td>${esc(v.meldung_hersteller)}</td>`;
     tr.addEventListener('click', () => {
@@ -821,6 +972,21 @@ async function loadVorkommnisse(id) {
       currentVorkId = v.id;
     });
     tbody.appendChild(tr);
+
+    // Karte (Mobil)
+    const card = document.createElement('div');
+    card.className = 'mobile-card';
+    card.innerHTML = `
+      <div class="mc-title">⚠️ ${esc(v.art_stoerung) || 'Vorkommnis'}</div>
+      <div class="mc-date">${esc(v.datum)}</div>
+      ${v.meldung_behoerde  ? `<div class="mc-detail">Behörde: ${esc(v.meldung_behoerde)}</div>`  : ''}
+      ${v.meldung_hersteller ? `<div class="mc-detail">Hersteller: ${esc(v.meldung_hersteller)}</div>` : ''}`;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#vork-cards .mobile-card').forEach(c => c.classList.remove('sel'));
+      card.classList.add('sel');
+      currentVorkId = v.id;
+    });
+    cards.appendChild(card);
   }
 }
 
@@ -859,7 +1025,9 @@ async function deleteGeraet() {
   currentGeraetId = null;
   document.getElementById('detail-content').innerHTML = '<p id="detail-placeholder" style="color:#aaa;text-align:center;margin-top:60px;font-size:14px">Bitte ein Gerät aus der Liste auswählen.</p>';
   document.getElementById('handbuch-section').style.display = 'none';
-  ['pruef-tbody','einw-tbody','vork-tbody','handbuch-tbody'].forEach(id => document.getElementById(id).innerHTML = '');
+  ['pruef-tbody','einw-tbody','vork-tbody','handbuch-tbody','pruef-cards','einw-cards','vork-cards']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+  goBackToList();
   loadGeraete();
 }
 

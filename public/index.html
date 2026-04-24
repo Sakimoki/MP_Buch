@@ -285,9 +285,12 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
 .form-row textarea { resize: vertical; min-height: 52px; }
 .form-row input[type=checkbox] { margin-top: 5px; width: 16px; height: 16px; cursor: pointer; }
 
+/* Karten-Container auf Desktop ausblenden */
+.mobile-cards { display: none; }
+
 /* ── Mobile (≤768px) ── */
 @media (max-width: 768px) {
-  body { overflow: auto; height: auto; font-size: 15px; }
+  body { overflow-x: hidden; overflow-y: auto; height: auto; font-size: 15px; }
   #main { flex-direction: column; padding: 0; gap: 0; overflow: visible; }
   #list-panel  { width: 100%; border: none; border-bottom: 1px solid var(--c-border); max-height: none; }
   #detail-panel { display: none; }
@@ -368,9 +371,6 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
   .sub-toolbar button { min-height: 40px; }
 }
 
-/* Karten-Container auf Desktop ausblenden */
-.mobile-cards { display: none; }
-
 /* ── Dokumente ── */
 .dok-link {
   color: var(--c-toolbar);
@@ -440,6 +440,7 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
         </thead>
         <tbody id="geraete-tbody"></tbody>
       </table>
+      <div id="geraete-cards" class="mobile-cards"></div>
     </div>
   </div>
 
@@ -784,14 +785,29 @@ async function loadGeraete() {
   const q = document.getElementById('search-input').value.trim();
   const url = '/api/geraete' + (q ? `?search=${encodeURIComponent(q)}` : '');
   const data = await (await api('GET', url)).json();
-  const tbody = document.getElementById('geraete-tbody');
-  tbody.innerHTML = '';
+  const tbody  = document.getElementById('geraete-tbody');
+  const gcards = document.getElementById('geraete-cards');
+  tbody.innerHTML  = '';
+  gcards.innerHTML = '';
   for (const g of data) {
     const tr = document.createElement('tr');
     if (g.id === currentGeraetId) tr.classList.add('sel');
     tr.innerHTML = `<td>${g.id}</td><td>${esc(g.bezeichnung)}</td><td>${esc(g.art_typ)}</td><td style="text-align:center">${esc(g.risikoklasse)}</td><td>${esc(g.standort_raum)}</td>`;
     tr.addEventListener('click', () => selectGeraet(g.id, tr));
     tbody.appendChild(tr);
+
+    const card = document.createElement('div');
+    card.className = 'mobile-card' + (g.id === currentGeraetId ? ' sel' : '');
+    card.dataset.id = g.id;
+    card.innerHTML = `
+      <div class="mc-title">${esc(g.bezeichnung)}</div>
+      <div class="mc-row">
+        ${g.art_typ      ? `<span class="mc-detail">${esc(g.art_typ)}</span>`          : ''}
+        ${g.risikoklasse ? `<span class="mc-date">Klasse ${esc(g.risikoklasse)}</span>` : ''}
+      </div>
+      ${g.standort_raum ? `<div class="mc-detail">📍 ${esc(g.standort_raum)}</div>` : ''}`;
+    card.addEventListener('click', () => selectGeraet(g.id, null));
+    gcards.appendChild(card);
   }
   setStatus(`${data.length} Gerät(e) geladen`);
 }
@@ -801,6 +817,9 @@ async function selectGeraet(id, trEl) {
   currentGeraetId = id;
   currentPruefId = currentEinwId = currentVorkId = null;
   document.querySelectorAll('#geraete-tbody tr').forEach(r => r.classList.remove('sel'));
+  document.querySelectorAll('#geraete-cards .mobile-card').forEach(c => {
+    c.classList.toggle('sel', parseInt(c.dataset.id) === id);
+  });
   if (trEl) trEl.classList.add('sel');
   if (isMobile()) {
     document.body.classList.add('mobile-detail-active');

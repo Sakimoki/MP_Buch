@@ -9,7 +9,6 @@ import { join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { exec } from 'node:child_process';
-<<<<<<< HEAD
 import { mkdirSync } from 'node:fs';
 import multer from 'multer';
 
@@ -17,22 +16,6 @@ const __dirname   = dirname(fileURLToPath(import.meta.url));
 const DB_PATH     = join(__dirname, 'medizinprodukte.db');
 const UPLOADS_DIR = join(__dirname, 'uploads');
 const PORT        = process.env.PORT || 3000;
-=======
-import { writeFile, unlink } from 'node:fs/promises';
-import { mkdirSync } from 'node:fs';
-
-const __dirname   = dirname(fileURLToPath(import.meta.url));
-const DB_PATH     = join(__dirname, 'medizinprodukte.db');
-const PORT        = process.env.PORT || 3000;
-const UPLOAD_ROOT = join(__dirname, 'uploads');
-
-const UPLOAD_DIRS = {
-  handbuch:               join(UPLOAD_ROOT, 'handbuecher'),
-  wartungsprotokoll:      join(UPLOAD_ROOT, 'wartungsprotokolle'),
-  einweisungsprotokoll:   join(UPLOAD_ROOT, 'einweisungsprotokolle'),
-};
-for (const d of Object.values(UPLOAD_DIRS)) mkdirSync(d, { recursive: true });
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
 
 mkdirSync(UPLOADS_DIR, { recursive: true });
 
@@ -142,7 +125,6 @@ db.exec(`
   )
 `);
 
-<<<<<<< HEAD
 // Spalten nachrüsten für bestehende Datenbanken
 const migrate = sql => { try { db.exec(sql); } catch {} };
 migrate('ALTER TABLE geraete ADD COLUMN hersteller_id INTEGER REFERENCES hersteller(id)');
@@ -163,38 +145,6 @@ const app = express();
 app.use(express.json());
 app.use(express.static(join(__dirname, 'dist')));
 app.use('/uploads', express.static(UPLOADS_DIR));
-=======
-db.exec(`
-  CREATE TABLE IF NOT EXISTS dokumente (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    typ TEXT NOT NULL,
-    geraet_id INTEGER NOT NULL,
-    referenz_id INTEGER,
-    dateiname TEXT NOT NULL,
-    originalname TEXT NOT NULL,
-    hochgeladen_am TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (geraet_id) REFERENCES geraete(id) ON DELETE CASCADE
-  )
-`);
-
-// ── Express-App ───────────────────────────────────────────────────────────────
-
-const app = express();
-app.use(express.json({ limit: '35mb' }));
-app.use(express.static(join(__dirname, 'public')));
-app.use('/uploads', express.static(UPLOAD_ROOT));
-
-// ── Hilfsfunktion ─────────────────────────────────────────────────────────────
-
-const GERAETE_FIELDS = [
-  'bezeichnung','art_typ','seriennummer','loscode','anschaffungsjahr',
-  'inbetriebnahmedatum','ausserdienst_datum','hersteller_name','hersteller_anschrift',
-  'hersteller_kontakt','bevollmaechtigter','ce_jahr','konformitaetserklaerung',
-  'risikoklasse','udi_di','udi_pi','emdn_code','aktives_geraet','implantierbar',
-  'einmalprodukt','steril','zweckbestimmung','betreiber','abteilung','standort_raum',
-  'inventarnummer','verantwortliche_person','netzwerkanbindung','softwareversion','bemerkungen',
-];
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
 
 function nowTs() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
@@ -257,17 +207,8 @@ app.put('/api/geraete/:id', (req, res) => {
   res.json({ success: true });
 });
 
-<<<<<<< HEAD
 app.delete('/api/geraete/:id', (req, res) => {
-=======
-// Gerät löschen (ON DELETE CASCADE entfernt Einweisungen, Prüfungen, Vorkommnisse, Dokumente)
-app.delete('/api/geraete/:id', async (req, res) => {
-  const docs = db.prepare('SELECT typ, dateiname FROM dokumente WHERE geraet_id=?').all(+req.params.id);
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
   db.prepare('DELETE FROM geraete WHERE id = ?').run(+req.params.id);
-  for (const d of docs) {
-    try { await unlink(join(UPLOAD_DIRS[d.typ], d.dateiname)); } catch {}
-  }
   res.json({ success: true });
 });
 
@@ -420,7 +361,6 @@ app.delete('/api/vorkommnisse/:id', (req, res) => {
   res.json({ success: true });
 });
 
-<<<<<<< HEAD
 // ── Hersteller ────────────────────────────────────────────────────────────────
 
 app.get('/api/hersteller', (req, res) => {
@@ -498,82 +438,6 @@ app.delete('/api/betreiber/:id', (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-=======
-// ── Routen: Dokumente ─────────────────────────────────────────────────────────
-
-const MAX_BYTES = 25 * 1024 * 1024;
-
-app.post('/api/dokumente/upload', async (req, res) => {
-  const { typ, geraet_id, referenz_id, originalname, data } = req.body;
-  if (!typ || !geraet_id || !originalname || !data) {
-    return res.status(400).json({ error: 'Pflichtfelder fehlen.' });
-  }
-  if (!UPLOAD_DIRS[typ]) {
-    return res.status(400).json({ error: 'Unbekannter Dokumenttyp.' });
-  }
-
-  const buf = Buffer.from(data, 'base64');
-  if (buf.length > MAX_BYTES) {
-    return res.status(413).json({ error: 'Datei überschreitet 25 MB.' });
-  }
-
-  // Sicherer Dateiname: nur alphanumerisch + Bindestrich/Unterstrich
-  const safeName = basename(originalname).replace(/[^a-zA-Z0-9._\-äöüÄÖÜ]/g, '_');
-  const ts        = Date.now();
-  const dateiname = `${typ}_${geraet_id}_${referenz_id ?? 0}_${ts}_${safeName}`;
-  const filepath  = join(UPLOAD_DIRS[typ], dateiname);
-
-  // Altes Dokument für denselben Eintrag ersetzen
-  const existing = db.prepare(
-    'SELECT id, dateiname, typ FROM dokumente WHERE geraet_id=? AND referenz_id IS ? AND typ=?'
-  ).get(+geraet_id, referenz_id != null ? +referenz_id : null, typ);
-
-  if (existing) {
-    try { await unlink(join(UPLOAD_DIRS[existing.typ], existing.dateiname)); } catch {}
-    db.prepare('DELETE FROM dokumente WHERE id=?').run(existing.id);
-  }
-
-  await writeFile(filepath, buf);
-  const result = db.prepare(`
-    INSERT INTO dokumente (typ, geraet_id, referenz_id, dateiname, originalname)
-    VALUES (?,?,?,?,?)
-  `).run(typ, +geraet_id, referenz_id != null ? +referenz_id : null, dateiname, originalname);
-
-  res.status(201).json({ id: Number(result.lastInsertRowid), dateiname });
-});
-
-app.get('/api/geraete/:id/dokumente', (req, res) => {
-  const rows = db.prepare(`
-    SELECT id, typ, referenz_id, dateiname, originalname, hochgeladen_am
-    FROM dokumente WHERE geraet_id = ? ORDER BY hochgeladen_am DESC
-  `).all(+req.params.id);
-  res.json(rows);
-});
-
-app.get('/api/pruefungen/:id/dokument', (req, res) => {
-  const row = db.prepare(
-    "SELECT id, dateiname, originalname FROM dokumente WHERE referenz_id=? AND typ='wartungsprotokoll'"
-  ).get(+req.params.id);
-  res.json(row || null);
-});
-
-app.get('/api/einweisungen/:id/dokument', (req, res) => {
-  const row = db.prepare(
-    "SELECT id, dateiname, originalname FROM dokumente WHERE referenz_id=? AND typ='einweisungsprotokoll'"
-  ).get(+req.params.id);
-  res.json(row || null);
-});
-
-app.delete('/api/dokumente/:id', async (req, res) => {
-  const row = db.prepare('SELECT typ, dateiname FROM dokumente WHERE id=?').get(+req.params.id);
-  if (!row) return res.status(404).json({ error: 'Nicht gefunden' });
-  try { await unlink(join(UPLOAD_DIRS[row.typ], row.dateiname)); } catch {}
-  db.prepare('DELETE FROM dokumente WHERE id=?').run(+req.params.id);
-  res.json({ success: true });
-});
-
-// ── Server starten ────────────────────────────────────────────────────────────
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
 
 app.listen(PORT, () => {
   const url = `http://localhost:${PORT}`;

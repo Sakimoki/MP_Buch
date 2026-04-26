@@ -299,7 +299,6 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
 }
 .form-row textarea { resize: vertical; min-height: 52px; }
 .form-row input[type=checkbox] { margin-top: 5px; width: 16px; height: 16px; cursor: pointer; }
-<<<<<<< HEAD
 .form-row input[type=file] { flex: 1; font-size: 12px; }
 
 /* ── Print: Bestandsliste ── */
@@ -308,127 +307,6 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
   #print-area, #print-area * { visibility: visible; }
   #print-area { position: fixed; top: 0; left: 0; width: 100%; }
 }
-=======
-
-/* Karten-Container auf Desktop ausblenden */
-.mobile-cards { display: none; }
-
-/* ── Mobile (≤768px) ── */
-@media (max-width: 768px) {
-  body { overflow-x: hidden; overflow-y: auto; height: auto; font-size: 15px; }
-  #main { flex-direction: column; padding: 0; gap: 0; overflow: visible; }
-  #list-panel  { width: 100%; border: none; border-bottom: 1px solid var(--c-border); max-height: none; }
-  #detail-panel { display: none; }
-  body.mobile-detail-active #list-panel  { display: none; }
-  body.mobile-detail-active #detail-panel { display: flex; min-height: calc(100dvh - 48px - 56px); }
-
-  /* Toolbar */
-  #toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
-  #search-wrap { width: 100%; margin-left: 0 !important; }
-  #search-input { width: 100%; max-width: none; }
-  #btn-bearbeiten, #btn-loeschen { display: none; }
-  body.mobile-detail-active #btn-bearbeiten,
-  body.mobile-detail-active #btn-loeschen { display: inline-block; }
-  #btn-neu { display: none; }
-  body.mobile-detail-active #btn-neu { display: none; }
-  .tbtn, .sub-toolbar button, .dlg-ft button { min-height: 44px; font-size: 14px; padding: 6px 14px; }
-
-  /* Statusbar */
-  #statusbar { padding: 4px 10px; font-size: 12px; }
-
-  /* Tabs: unten fixiert */
-  #tabs {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    z-index: 100; border-top: 2px solid var(--c-toolbar);
-    border-bottom: none; background: #fff; height: 56px;
-  }
-  .tab-btn {
-    flex: 1; flex-direction: column; font-size: 10px;
-    padding: 4px 2px; gap: 1px; display: flex;
-    align-items: center; justify-content: center; min-height: 56px;
-    border-right: 1px solid #e0e0e0;
-  }
-  .tab-btn .tab-icon { font-size: 18px; }
-  .tab-pane { padding-bottom: 64px; }
-  #tab-detail { padding-bottom: 64px; }
-
-  /* Karten-Ansicht */
-  .mobile-cards { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
-  .mobile-card {
-    background: #fff; border: 1px solid var(--c-border);
-    border-radius: 6px; padding: 10px 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.08); cursor: pointer;
-  }
-  .mobile-card.overdue { border-left: 4px solid var(--c-del); background: var(--c-overdue); }
-  .mobile-card.ok-row  { border-left: 4px solid var(--c-add); background: var(--c-ok); }
-  .mobile-card.sel     { border-color: var(--c-toolbar); background: #e8f4fb; }
-  .mc-title  { font-weight: bold; font-size: 14px; margin-bottom: 3px; }
-  .mc-date   { color: #555; font-size: 12px; }
-  .mc-detail { color: #666; font-size: 12px; margin-top: 2px; }
-  .mc-row    { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 4px; }
-  .dt { display: none; }
-
-  /* Vollbild-Dialoge */
-  dialog {
-    width: 100vw !important; max-width: 100vw;
-    height: 100dvh; max-height: 100dvh;
-    border-radius: 0; margin: 0; inset: 0;
-  }
-  .dlg-body { max-height: calc(100dvh - 100px); }
-  .form-row { flex-direction: column; }
-  .form-row label { width: 100%; min-width: unset; padding-bottom: 3px; }
-  .form-row input[type=text],
-  .form-row input[type=date],
-  .form-row select,
-  .form-row textarea { width: 100%; }
-
-  /* Gerätedaten-Tab */
-  .frow { flex-direction: column; padding: 4px 8px; }
-  .flabel { width: 100%; min-width: unset; color: #888; font-size: 11px; padding-top: 4px; }
-  .fval { font-size: 14px; }
-  .sec-hd { font-size: 13px; }
-
-  /* Handbücher */
-  #handbuch-table td, #handbuch-table th { font-size: 12px; padding: 5px 4px; }
-
-  /* Sub-toolbar */
-  .sub-toolbar { flex-wrap: wrap; }
-  .sub-toolbar button { min-height: 40px; }
-}
-
-/* ── Dokumente ── */
-.dok-link {
-  color: var(--c-toolbar);
-  text-decoration: none;
-  font-size: 11px;
-  white-space: nowrap;
-}
-.dok-link:hover { text-decoration: underline; }
-.dok-upload-btn {
-  background: none;
-  border: 1px dashed #aaa;
-  color: #888;
-  padding: 1px 6px;
-  font-size: 11px;
-  cursor: pointer;
-  border-radius: 2px;
-}
-.dok-upload-btn:hover { border-color: var(--c-toolbar); color: var(--c-toolbar); }
-.dok-del-btn {
-  background: none;
-  border: none;
-  color: var(--c-del);
-  font-size: 11px;
-  cursor: pointer;
-  padding: 0 2px;
-}
-.dok-del-btn:hover { text-decoration: underline; }
-#handbuch-section { padding: 4px 8px 12px; }
-#handbuch-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
-#handbuch-table th { background: #e0e0e0; padding: 3px 6px; text-align: left; border-bottom: 2px solid #bbb; }
-#handbuch-table td { padding: 3px 6px; border-bottom: 1px solid #eee; }
-.upload-progress { font-size: 11px; color: #888; margin-left: 8px; }
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
 </style>
 </head>
 <body>
@@ -436,7 +314,6 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
 <!-- ── Toolbar ─────────────────────────────────────────────────────────────── -->
 <header id="toolbar">
   <span id="app-title">Medizinprodukte-Datenbank</span>
-<<<<<<< HEAD
   <button class="tbtn add" onclick="openNewGeraet()">+ Neues Gerät</button>
   <button class="tbtn"     onclick="openEditGeraet()">Bearbeiten</button>
   <button class="tbtn del" onclick="deleteGeraet()">Löschen</button>
@@ -444,12 +321,6 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
   <button class="tbtn" onclick="openHerstellerMgmt()" title="Hersteller-Stammdaten">🏭 Hersteller</button>
   <button class="tbtn" onclick="openBetreiberMgmt()"  title="Betreiber-Stammdaten">🏥 Betreiber</button>
   <button class="tbtn" onclick="openBestandsliste()"  title="Druckbare Bestandsliste">📋 Bestandsliste</button>
-=======
-  <button id="btn-zurueck"    class="tbtn" onclick="goBackToList()" style="display:none">← Zurück</button>
-  <button id="btn-neu"        class="tbtn add" onclick="openNewGeraet()">+ Neues Gerät</button>
-  <button id="btn-bearbeiten" class="tbtn"     onclick="openEditGeraet()">Bearbeiten</button>
-  <button id="btn-loeschen"   class="tbtn del" onclick="deleteGeraet()">Löschen</button>
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
   <div id="search-wrap">
     <label for="search-input">Suche:</label>
     <input id="search-input" type="text" placeholder="Bezeichnung, Typ, SN …" oninput="loadGeraete()">
@@ -482,19 +353,12 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
   <!-- Rechte Spalte: Detail-Tabs -->
   <div id="detail-panel">
     <div id="tabs">
-<<<<<<< HEAD
       <button class="tab-btn active" onclick="showTab('detail')">Gerätedaten</button>
       <button class="tab-btn"        onclick="showTab('einw')">Einweisungen</button>
       <button class="tab-btn"        onclick="showTab('ueberg')">Übergabe</button>
       <button class="tab-btn"        onclick="showTab('pruef')">STK / Wartung</button>
       <button class="tab-btn"        onclick="showTab('dok')">Gebrauchsanweisungen</button>
       <button class="tab-btn"        onclick="showTab('vork')">Vorkommnisse</button>
-=======
-      <button class="tab-btn active" onclick="showTab('detail')"><span class="tab-icon">🗂️</span><span>Gerätedaten</span></button>
-      <button class="tab-btn"        onclick="showTab('pruef')"><span class="tab-icon">🔧</span><span>STK / Wartung</span></button>
-      <button class="tab-btn"        onclick="showTab('einw')"><span class="tab-icon">👤</span><span>Einweisungen</span></button>
-      <button class="tab-btn"        onclick="showTab('vork')"><span class="tab-icon">⚠️</span><span>Vorkommnisse</span></button>
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
     </div>
 
     <!-- Tab 1: Gerätedaten -->
@@ -597,18 +461,10 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
           <thead>
             <tr>
               <th style="width:36px">ID</th>
-<<<<<<< HEAD
               <th>Dateiname</th>
               <th>Beschreibung</th>
               <th style="width:130px">Hochgeladen am</th>
               <th style="width:70px">Öffnen</th>
-=======
-              <th style="width:95px">Datum</th>
-              <th>Eingewiesene Person</th>
-              <th>Beauftragte Person</th>
-              <th style="width:110px">Funktionsprüfung</th>
-              <th style="width:110px">Protokoll</th>
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
             </tr>
           </thead>
           <tbody id="dok-tbody"></tbody>
@@ -953,7 +809,6 @@ dialog::backdrop { background: rgba(0,0,0,.42); }
 'use strict';
 
 // ── State ────────────────────────────────────────────────────────────────────
-<<<<<<< HEAD
 let currentGeraetId = null;
 let currentPruefId  = null;
 let currentEinwId   = null;
@@ -965,15 +820,6 @@ let hstCache = [];
 let btrCache = [];
 let currentHstId = null;
 let currentBtrId = null;
-=======
-let currentGeraetId  = null;
-let currentPruefId   = null;
-let currentEinwId    = null;
-let currentVorkId    = null;
-let editMode         = false;
-// Upload-Kontext: wird beim Klick auf Upload-Button gesetzt
-let uploadContext    = { typ: null, referenzId: null, progressId: null };
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) {
@@ -1325,23 +1171,12 @@ async function openEditGeraet() {
 
 async function deleteGeraet() {
   if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-<<<<<<< HEAD
   if (!confirm('Gerät und alle zugehörigen Einträge (Prüfungen, Einweisungen, Übergaben, Vorkommnisse) wirklich löschen?')) return;
   await api('DELETE', `/api/geraete/${currentGeraetId}`);
   currentGeraetId = null;
   document.getElementById('detail-content').innerHTML = '<p id="detail-placeholder" style="color:#aaa;text-align:center;margin-top:60px;font-size:14px">Bitte ein Gerät aus der Liste auswählen.</p>';
   ['pruef-tbody','einw-tbody','ueberg-tbody','dok-tbody','vork-tbody'].forEach(id =>
     document.getElementById(id).innerHTML = '');
-=======
-  if (!confirm('Gerät und alle zugehörigen Einträge (Prüfungen, Einweisungen, Vorkommnisse, Dokumente) wirklich löschen?')) return;
-  await api('DELETE', `/api/geraete/${currentGeraetId}`);
-  currentGeraetId = null;
-  document.getElementById('detail-content').innerHTML = '<p id="detail-placeholder" style="color:#aaa;text-align:center;margin-top:60px;font-size:14px">Bitte ein Gerät aus der Liste auswählen.</p>';
-  document.getElementById('handbuch-section').style.display = 'none';
-  ['pruef-tbody','einw-tbody','vork-tbody','handbuch-tbody','pruef-cards','einw-cards','vork-cards']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
-  goBackToList();
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
   loadGeraete();
 }
 
@@ -1757,7 +1592,6 @@ async function deleteVorkommnis() {
   loadVorkommnisse(currentGeraetId);
 }
 
-<<<<<<< HEAD
 // ── Bestandsliste ─────────────────────────────────────────────────────────────
 async function openBestandsliste() {
   const data = await (await api('GET', '/api/bestandsliste')).json();
@@ -1838,91 +1672,6 @@ async function openBestandsliste() {
 </body>
 </html>`);
   win.document.close();
-=======
-// ── Dokumente ─────────────────────────────────────────────────────────────────
-
-async function loadHandbuecher(geraetId) {
-  const section = document.getElementById('handbuch-section');
-  const tbody   = document.getElementById('handbuch-tbody');
-  section.style.display = 'block';
-  tbody.innerHTML = '';
-  const data = await (await api('GET', `/api/geraete/${geraetId}/dokumente`)).json();
-  const hbs  = data.filter(d => d.typ === 'handbuch');
-  if (!hbs.length) {
-    tbody.innerHTML = '<tr><td colspan="3" style="color:#aaa;text-align:center">Noch keine Handbücher hochgeladen.</td></tr>';
-    return;
-  }
-  for (const d of hbs) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><a class="dok-link" href="/uploads/handbuecher/${esc(d.dateiname)}" target="_blank">📄 ${esc(d.originalname)}</a></td>
-      <td>${esc(d.hochgeladen_am)}</td>
-      <td><button class="dok-del-btn" onclick="deleteDokument(${d.id}, event)">✕ Löschen</button></td>`;
-    tbody.appendChild(tr);
-  }
-}
-
-function triggerUpload(typ, referenzId, progressId, evt) {
-  if (evt) evt.stopPropagation();
-  uploadContext = { typ, referenzId: referenzId ?? null, progressId: progressId || 'handbuch-progress' };
-  document.getElementById('file-input').value = '';
-  document.getElementById('file-input').click();
-}
-
-async function handleFileSelected(evt) {
-  const file = evt.target.files[0];
-  if (!file) return;
-
-  const { typ, referenzId, progressId } = uploadContext;
-  const prog = progressId ? document.getElementById(progressId) : null;
-  if (prog) prog.textContent = 'Wird hochgeladen…';
-
-  const MAX = 25 * 1024 * 1024;
-  if (file.size > MAX) {
-    if (prog) prog.textContent = '';
-    alert('Die Datei überschreitet 25 MB und kann nicht hochgeladen werden.');
-    return;
-  }
-  if (!file.name.toLowerCase().endsWith('.pdf')) {
-    if (prog) prog.textContent = '';
-    alert('Nur PDF-Dateien sind erlaubt.');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const base64 = reader.result.split(',')[1];
-    const res = await api('POST', '/api/dokumente/upload', {
-      typ,
-      geraet_id:    currentGeraetId,
-      referenz_id:  referenzId,
-      originalname: file.name,
-      data:         base64,
-    });
-    if (prog) prog.textContent = '';
-    if (!res.ok) {
-      alert((await res.json()).error || 'Upload fehlgeschlagen.');
-      return;
-    }
-    setStatus(`Dokument "${file.name}" hochgeladen.`);
-    if (typ === 'handbuch')             await loadHandbuecher(currentGeraetId);
-    if (typ === 'wartungsprotokoll')    await loadPruefungen(currentGeraetId);
-    if (typ === 'einweisungsprotokoll') await loadEinweisungen(currentGeraetId);
-  };
-  reader.readAsDataURL(file);
-}
-
-async function deleteDokument(dokId, evt) {
-  if (evt) evt.stopPropagation();
-  if (!confirm('Dokument wirklich löschen?')) return;
-  await api('DELETE', `/api/dokumente/${dokId}`);
-  setStatus('Dokument gelöscht.');
-  await Promise.all([
-    loadHandbuecher(currentGeraetId),
-    loadPruefungen(currentGeraetId),
-    loadEinweisungen(currentGeraetId),
-  ]);
->>>>>>> fd186e6afbe6e36829a26324d1e37a224a952c3d
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

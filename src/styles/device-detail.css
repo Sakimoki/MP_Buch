@@ -1,0 +1,82 @@
+#detail-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--c-border);
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+#tabs {
+  display: flex;
+  border-bottom: 2px solid var(--c-toolbar);
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  border: none;
+  background: #e4e4e4;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  border-right: 1px solid #ccc;
+  transition: background .1s;
+  white-space: nowrap;
+}
+.tab-btn:hover { background: #d4dce6; }
+.tab-btn.active {
+  background: var(--c-panel);
+  font-weight: bold;
+  color: var(--c-toolbar);
+  border-bottom: 2px solid var(--c-panel);
+  margin-bottom: -2px;
+}
+
+.tab-pane { display: none; flex: 1; overflow: auto; flex-direction: column; }
+.tab-pane.active { display: flex; }
+
+#tab-detail { padding: 4px 8px 16px; overflow-y: auto; }
+
+.sec-hd {
+  background: var(--c-sec);
+  padding: 4px 8px;
+  font-weight: bold;
+  font-size: 12px;
+  margin: 10px 0 3px;
+  border-left: 3px solid var(--c-toolbar);
+}
+
+.frow { display: flex; padding: 2px 8px; }
+.flabel { width: 190px; min-width: 190px; color: #666; font-size: 12px; padding-top: 1px; }
+.fval { color: #222; font-size: 12px; word-break: break-word; }
+.audit { text-align: center; color: #bbb; font-size: 11px; padding: 10px 0 4px; }
+
+#detail-placeholder { color: #aaa; text-align: center; margin-top: 60px; font-size: 14px; }
+
+.sub-toolbar {
+  padding: 5px 8px;
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  border-bottom: 1px solid var(--c-border);
+  align-items: center;
+}
+.sub-toolbar button {
+  border: none;
+  color: #fff;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.sub-toolbar .add  { background: var(--c-add); }
+.sub-toolbar .add:hover { filter: brightness(1.1); }
+.sub-toolbar .del  { background: var(--c-del); }
+.sub-toolbar .del:hover { filter: brightness(1.1); }
+.sub-toolbar .warn { background: var(--c-warn); }
+.sub-toolbar .warn:hover { filter: brightness(1.1); }
+
+.table-scroll { flex: 1; overflow-y: auto; }
+
+.file-link { color: var(--c-toolbar); text-decoration: none; font-size: 11px; }
+.file-link:hover { text-decoration: underline; }

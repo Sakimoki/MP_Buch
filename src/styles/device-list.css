@@ -1,0 +1,47 @@
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  padding: 8px;
+  gap: 8px;
+}
+
+#list-panel {
+  width: 310px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--c-border);
+  background: var(--c-panel);
+  overflow: hidden;
+}
+
+#list-heading {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 4px 8px;
+  background: #e8e8e8;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+
+#list-scroll { flex: 1; overflow-y: auto; }
+
+.dt { width: 100%; border-collapse: collapse; font-size: 12px; }
+.dt th {
+  background: #e0e0e0;
+  padding: 4px 6px;
+  text-align: left;
+  border-bottom: 2px solid #bbb;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+.dt td { padding: 3px 6px; border-bottom: 1px solid #eee; }
+.dt tbody tr { cursor: pointer; }
+.dt tbody tr:hover td { background: #e0ecf8 !important; }
+.dt tbody tr.sel td { background: #c5daf5 !important; }
+.dt tbody tr.overdue td { background: var(--c-overdue); }
+.dt tbody tr.ok-row  td { background: var(--c-ok); }
+.dt tbody tr.overdue.sel td { background: #ffb0b0 !important; }

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getUebergaben, deleteUebergabe } from '../../api/api.js'
+import { getStoerungsmeldungen, deleteStoerungsmeldung } from '../../api/api.js'
 import { useApp } from '../../App.jsx'
-import UebergabeDialog from '../dialogs/UebergabeDialog.jsx'
+import StorungsmeldungDialog from '../dialogs/StorungsmeldungDialog.jsx'
 
-export default function UebergabenTab({ geraetId }) {
+export default function StorungsmeldungenTab({ geraetId }) {
   const { setStatus } = useApp()
   const [data, setData]             = useState([])
   const [selectedId, setSelectedId] = useState(null)
@@ -11,7 +11,7 @@ export default function UebergabenTab({ geraetId }) {
 
   const load = () => {
     if (!geraetId) return
-    getUebergaben(geraetId).then(setData).catch(e => setStatus('Fehler: ' + e.message))
+    getStoerungsmeldungen(geraetId).then(setData).catch(e => setStatus('Fehler: ' + e.message))
   }
 
   useEffect(() => {
@@ -20,10 +20,10 @@ export default function UebergabenTab({ geraetId }) {
   }, [geraetId])
 
   const handleDelete = async () => {
-    if (!selectedId) { alert('Bitte zuerst einen Wartungseintrag auswählen.'); return }
-    if (!confirm('Wartungseintrag löschen?')) return
+    if (!selectedId) { alert('Bitte zuerst einen Eintrag auswählen.'); return }
+    if (!confirm('Störungsmeldung löschen?')) return
     try {
-      await deleteUebergabe(selectedId)
+      await deleteStoerungsmeldung(selectedId)
       setSelectedId(null)
       load()
     } catch (e) { alert(e.message) }
@@ -33,7 +33,7 @@ export default function UebergabenTab({ geraetId }) {
     <>
       <div className="sub-toolbar">
         <button className="add" onClick={() => { if (!geraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return } setShowDialog(true) }}>
-          + Wartung hinzufügen
+          + Störung melden
         </button>
         <button className="del" onClick={handleDelete}>Löschen</button>
       </div>
@@ -43,33 +43,27 @@ export default function UebergabenTab({ geraetId }) {
             <tr>
               <th style={{ width: 36 }}>ID</th>
               <th style={{ width: 95 }}>Datum</th>
-              <th>Empfänger</th>
+              <th>Art der Störung</th>
               <th>Bemerkungen</th>
-              <th style={{ width: 120 }}>Protokoll</th>
             </tr>
           </thead>
           <tbody>
-            {data.map(u => (
-              <tr key={u.id} className={selectedId === u.id ? 'sel' : ''} onClick={() => setSelectedId(u.id)}>
-                <td>{u.id}</td>
-                <td>{u.datum}</td>
-                <td>{u.empfaenger}</td>
-                <td>{u.bemerkungen}</td>
-                <td>
-                  {u.datei_name
-                    ? <a className="file-link" href={`/uploads/${u.datei_pfad}`} target="_blank" rel="noreferrer">{u.datei_name}</a>
-                    : <span style={{ color: '#bbb' }}>–</span>}
-                </td>
+            {data.map(s => (
+              <tr key={s.id} className={selectedId === s.id ? 'sel' : ''} onClick={() => setSelectedId(s.id)}>
+                <td>{s.id}</td>
+                <td>{s.datum}</td>
+                <td>{s.art_stoerung}</td>
+                <td>{s.bemerkungen}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       {showDialog && (
-        <UebergabeDialog
+        <StorungsmeldungDialog
           geraetId={geraetId}
           onClose={() => setShowDialog(false)}
-          onSaved={() => { setShowDialog(false); load(); setStatus('Wartung gespeichert.') }}
+          onSaved={() => { setShowDialog(false); load(); setStatus('Störungsmeldung gespeichert.') }}
         />
       )}
     </>

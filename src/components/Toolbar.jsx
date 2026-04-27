@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { deleteGeraet, getBestandsliste } from '../api/api.js'
 import { useApp } from '../App.jsx'
-import GeraetDialog      from './dialogs/GeraetDialog.jsx'
-import HerstellerDialog  from './dialogs/HerstellerDialog.jsx'
-import BetreiberDialog   from './dialogs/BetreiberDialog.jsx'
+import GeraetDialog          from './dialogs/GeraetDialog.jsx'
+import HerstellerDialog      from './dialogs/HerstellerDialog.jsx'
+import BetreiberDialog       from './dialogs/BetreiberDialog.jsx'
+import VorkommnisseOverview  from './VorkommnisseOverview.jsx'
 
 export default function Toolbar() {
   const { selectedGeraetId, setSelectedGeraetId, searchQuery, setSearchQuery, loadGeraete, setStatus } = useApp()
@@ -95,6 +96,7 @@ export default function Toolbar() {
       <button className="tbtn" title="Hersteller-Stammdaten" onClick={() => setDialog('hersteller')}>🏭 Hersteller</button>
       <button className="tbtn" title="Betreiber-Stammdaten"  onClick={() => setDialog('betreiber')}>🏥 Betreiber</button>
       <button className="tbtn" title="Druckbare Bestandsliste" onClick={openBestandsliste}>📋 Bestandsliste</button>
+      <button className="tbtn" title="Vorkommnisse – Übersicht" onClick={() => setDialog('vorkommnisse')}>⚠️ Vorkommnisse</button>
       <div id="search-wrap">
         <label htmlFor="search-input">Suche:</label>
         <input
@@ -112,8 +114,9 @@ export default function Toolbar() {
       {dialog === 'geraet-edit' && (
         <GeraetDialog mode="edit" onClose={() => setDialog(null)} onSaved={handleGeraetSaved} />
       )}
-      {dialog === 'hersteller' && <HerstellerDialog onClose={() => setDialog(null)} />}
-      {dialog === 'betreiber'  && <BetreiberDialog  onClose={() => setDialog(null)} />}
+      {dialog === 'hersteller'    && <HerstellerDialog     onClose={() => setDialog(null)} />}
+      {dialog === 'betreiber'     && <BetreiberDialog      onClose={() => setDialog(null)} />}
+      {dialog === 'vorkommnisse'  && <VorkommnisseOverview onClose={() => setDialog(null)} />}
     </>
   )
 }

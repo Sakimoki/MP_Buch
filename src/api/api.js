@@ -74,9 +74,20 @@ export const uploadDokument = async (formData) => {
 }
 
 // ── Vorkommnisse ──────────────────────────────────────────────────────────────
-export const getVorkommnisse  = (geraetId) => apiFetch('GET', `/api/geraete/${geraetId}/vorkommnisse`)
-export const createVorkommnis = (data) => apiFetch('POST', '/api/vorkommnisse', data)
-export const deleteVorkommnis = (id) => apiFetch('DELETE', `/api/vorkommnisse/${id}`)
+export const getAllVorkommnisse = () => apiFetch('GET', '/api/vorkommnisse')
+export const createVorkommnis  = (data) => apiFetch('POST', '/api/vorkommnisse', data)
+export const deleteVorkommnis  = (id) => apiFetch('DELETE', `/api/vorkommnisse/${id}`)
+
+// ── Störungsmeldungen ─────────────────────────────────────────────────────────
+export const getStoerungsmeldungen  = (geraetId) => apiFetch('GET', `/api/geraete/${geraetId}/stoerungsmeldungen`)
+export const createStoerungsmeldung = (data) => apiFetch('POST', '/api/stoerungsmeldungen', data)
+export const deleteStoerungsmeldung = (id) => apiFetch('DELETE', `/api/stoerungsmeldungen/${id}`)
+
+export const uploadPruefungsDokument = async (id, formData) => {
+  const res = await fetch(`/api/pruefungen/${id}/upload`, { method: 'POST', body: formData })
+  if (!res.ok) throw new Error('Datei-Upload fehlgeschlagen')
+  return res.json()
+}
 
 // ── Hilfsfunktion ─────────────────────────────────────────────────────────────
 export function dataURIToBlob(dataURI) {

@@ -117,13 +117,44 @@ db.exec(`
 db.exec(`
   CREATE TABLE IF NOT EXISTS vorkommnisse (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    geraet_id INTEGER NOT NULL,
+    geraet_id INTEGER REFERENCES geraete(id) ON DELETE CASCADE,
     datum TEXT, art_stoerung TEXT, folgen TEXT,
     meldung_behoerde TEXT, meldung_hersteller TEXT,
-    korrektivmassnahmen TEXT, bemerkungen TEXT,
+    korrektivmassnahmen TEXT, bemerkungen TEXT
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS stoerungsmeldungen (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    geraet_id INTEGER NOT NULL,
+    datum TEXT, art_stoerung TEXT, bemerkungen TEXT,
+    erstellt_am TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (geraet_id) REFERENCES geraete(id) ON DELETE CASCADE
   )
 `);
+
+// Vorkommnisse-Tabelle: geraet_id nullable machen (SQLite braucht Tabellen-Neuerstellung)
+try {
+  const vCols = db.prepare("PRAGMA table_info(vorkommnisse)").all();
+  const gidCol = vCols.find(c => c.name === 'geraet_id');
+  if (gidCol && gidCol.notnull === 1) {
+    db.exec('BEGIN');
+    db.exec(`
+      CREATE TABLE vorkommnisse_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        geraet_id INTEGER REFERENCES geraete(id) ON DELETE CASCADE,
+        datum TEXT, art_stoerung TEXT, folgen TEXT,
+        meldung_behoerde TEXT, meldung_hersteller TEXT,
+        korrektivmassnahmen TEXT, bemerkungen TEXT
+      )
+    `);
+    db.exec('INSERT INTO vorkommnisse_new SELECT id, geraet_id, datum, art_stoerung, folgen, meldung_behoerde, meldung_hersteller, korrektivmassnahmen, bemerkungen FROM vorkommnisse');
+    db.exec('DROP TABLE vorkommnisse');
+    db.exec('ALTER TABLE vorkommnisse_new RENAME TO vorkommnisse');
+    db.exec('COMMIT');
+  }
+} catch (e) { try { db.exec('ROLLBACK'); } catch {} }
 
 // Spalten nachrüsten für bestehende Datenbanken
 const migrate = sql => { try { db.exec(sql); } catch {} };
@@ -138,6 +169,13 @@ migrate('ALTER TABLE hersteller ADD COLUMN tel TEXT');
 migrate('ALTER TABLE hersteller ADD COLUMN email TEXT');
 migrate('ALTER TABLE betreiber ADD COLUMN tel TEXT');
 migrate('ALTER TABLE betreiber ADD COLUMN email TEXT');
+migrate('ALTER TABLE geraete ADD COLUMN betreiber_typ TEXT DEFAULT "Cooperative Mensch"');
+migrate('ALTER TABLE geraete ADD COLUMN mtk_anlage2 TEXT DEFAULT "nein"');
+migrate('ALTER TABLE geraete ADD COLUMN mtk_datum TEXT');
+migrate('ALTER TABLE geraete ADD COLUMN wartung_datum TEXT');
+migrate('ALTER TABLE pruefungen ADD COLUMN firma TEXT');
+migrate('ALTER TABLE pruefungen ADD COLUMN datei_name TEXT');
+migrate('ALTER TABLE pruefungen ADD COLUMN datei_pfad TEXT');
 
 // ── Express ───────────────────────────────────────────────────────────────────
 
@@ -151,13 +189,14 @@ function nowTs() {
 }
 
 const GERAETE_FIELDS = [
-  'bezeichnung','art_typ','seriennummer','loscode','anschaffungsjahr',
+  'bezeichnung','art_typ','seriennummer','anschaffungsjahr',
   'inbetriebnahmedatum','ausserdienst_datum',
   'hersteller_id','hersteller_name','hersteller_anschrift','hersteller_tel','hersteller_email',
   'ce_jahr','risikoklasse','udi_di','udi_pi','emdn_code',
-  'aktives_geraet','implantierbar','einmalprodukt','steril','zweckbestimmung',
+  'aktives_geraet','implantierbar','einmalprodukt','steril',
   'betreiber_id','betreiber','betreiber_anschrift','betreiber_tel','betreiber_email',
   'inventarnummer','verantwortliche_person','netzwerkanbindung','softwareversion','bemerkungen',
+  'betreiber_typ','mtk_anlage2','mtk_datum','wartung_datum',
 ];
 
 // ── Geräte ────────────────────────────────────────────────────────────────────
@@ -252,7 +291,7 @@ app.delete('/api/einweisungen/:id', (req, res) => {
 
 app.get('/api/geraete/:id/uebergaben', (req, res) => {
   res.json(db.prepare(`
-    SELECT id, datum, pruefer, empfaenger, funktionspruefung, datei_name, erstellt_am
+    SELECT id, datum, empfaenger, bemerkungen, datei_name, datei_pfad, erstellt_am
     FROM uebergaben WHERE geraet_id = ? ORDER BY datum DESC
   `).all(+req.params.id));
 });
@@ -309,7 +348,7 @@ app.delete('/api/dokumente/:id', (req, res) => {
 
 app.get('/api/geraete/:id/pruefungen', (req, res) => {
   res.json(db.prepare(`
-    SELECT id, art, datum, naechste_faelligkeit, pruefer, ergebnis
+    SELECT id, art, datum, naechste_faelligkeit, pruefer, ergebnis, firma, datei_name, datei_pfad
     FROM pruefungen WHERE geraet_id = ? ORDER BY datum DESC
   `).all(+req.params.id));
 });
@@ -320,12 +359,28 @@ app.post('/api/pruefungen', (req, res) => {
   const r = db.prepare(`
     INSERT INTO pruefungen
       (geraet_id, art, datum, naechste_faelligkeit, pruefer, ergebnis,
-       messwerte, messverfahren, maengel, korrektivmassnahmen, bemerkungen)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+       messwerte, messverfahren, maengel, korrektivmassnahmen, bemerkungen, firma)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(b.geraet_id, b.art, b.datum, b.naechste_faelligkeit||null, b.pruefer||null,
          b.ergebnis||null, b.messwerte||null, b.messverfahren||null,
-         b.maengel||null, b.korrektivmassnahmen||null, b.bemerkungen||null);
-  res.status(201).json({ id: Number(r.lastInsertRowid) });
+         b.maengel||null, b.korrektivmassnahmen||null, b.bemerkungen||null, b.firma||null);
+  const newId = Number(r.lastInsertRowid);
+  if (b.ergebnis === 'Nicht bestanden') {
+    const hinweis = [b.pruefer ? `Prüfer: ${b.pruefer}` : null, b.maengel ? `Mängel: ${b.maengel}` : null]
+      .filter(Boolean).join(' | ');
+    db.prepare(`
+      INSERT INTO vorkommnisse (geraet_id, datum, art_stoerung, bemerkungen)
+      VALUES (?,?,?,?)
+    `).run(b.geraet_id, b.datum, 'MTK/Wartung nicht bestanden', hinweis||null);
+  }
+  res.status(201).json({ id: newId });
+});
+
+app.post('/api/pruefungen/:id/upload', upload.single('datei'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Keine Datei hochgeladen.' });
+  db.prepare('UPDATE pruefungen SET datei_name=?, datei_pfad=? WHERE id=?')
+    .run(req.file.originalname, req.file.filename, +req.params.id);
+  res.json({ success: true, datei_name: req.file.originalname });
 });
 
 app.delete('/api/pruefungen/:id', (req, res) => {
@@ -335,11 +390,16 @@ app.delete('/api/pruefungen/:id', (req, res) => {
 
 // ── Vorkommnisse ──────────────────────────────────────────────────────────────
 
-app.get('/api/geraete/:id/vorkommnisse', (req, res) => {
+app.get('/api/vorkommnisse', (req, res) => {
   res.json(db.prepare(`
-    SELECT id, datum, art_stoerung, meldung_behoerde, meldung_hersteller
-    FROM vorkommnisse WHERE geraet_id = ? ORDER BY datum DESC
-  `).all(+req.params.id));
+    SELECT v.id, v.datum, v.art_stoerung, v.folgen,
+           v.meldung_behoerde, v.meldung_hersteller,
+           v.korrektivmassnahmen, v.bemerkungen, v.geraet_id,
+           g.bezeichnung AS geraet_bezeichnung
+    FROM vorkommnisse v
+    LEFT JOIN geraete g ON g.id = v.geraet_id
+    ORDER BY v.datum DESC
+  `).all());
 });
 
 app.post('/api/vorkommnisse', (req, res) => {
@@ -350,7 +410,7 @@ app.post('/api/vorkommnisse', (req, res) => {
       (geraet_id, datum, art_stoerung, folgen,
        meldung_behoerde, meldung_hersteller, korrektivmassnahmen, bemerkungen)
     VALUES (?,?,?,?,?,?,?,?)
-  `).run(b.geraet_id, b.datum, b.art_stoerung||null, b.folgen||null,
+  `).run(b.geraet_id||null, b.datum, b.art_stoerung||null, b.folgen||null,
          b.meldung_behoerde||null, b.meldung_hersteller||null,
          b.korrektivmassnahmen||null, b.bemerkungen||null);
   res.status(201).json({ id: Number(r.lastInsertRowid) });
@@ -358,6 +418,30 @@ app.post('/api/vorkommnisse', (req, res) => {
 
 app.delete('/api/vorkommnisse/:id', (req, res) => {
   db.prepare('DELETE FROM vorkommnisse WHERE id = ?').run(+req.params.id);
+  res.json({ success: true });
+});
+
+// ── Störungsmeldungen ─────────────────────────────────────────────────────────
+
+app.get('/api/geraete/:id/stoerungsmeldungen', (req, res) => {
+  res.json(db.prepare(`
+    SELECT id, datum, art_stoerung, bemerkungen, erstellt_am
+    FROM stoerungsmeldungen WHERE geraet_id = ? ORDER BY datum DESC
+  `).all(+req.params.id));
+});
+
+app.post('/api/stoerungsmeldungen', (req, res) => {
+  const b = req.body;
+  if (!b.datum) return res.status(400).json({ error: 'Datum ist ein Pflichtfeld.' });
+  const r = db.prepare(`
+    INSERT INTO stoerungsmeldungen (geraet_id, datum, art_stoerung, bemerkungen, erstellt_am)
+    VALUES (?,?,?,?,?)
+  `).run(b.geraet_id, b.datum, b.art_stoerung||null, b.bemerkungen||null, nowTs());
+  res.status(201).json({ id: Number(r.lastInsertRowid) });
+});
+
+app.delete('/api/stoerungsmeldungen/:id', (req, res) => {
+  db.prepare('DELETE FROM stoerungsmeldungen WHERE id = ?').run(+req.params.id);
   res.json({ success: true });
 });
 

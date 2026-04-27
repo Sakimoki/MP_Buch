@@ -80,3 +80,6 @@
 
 .file-link { color: var(--c-toolbar); text-decoration: none; font-size: 11px; }
 .file-link:hover { text-decoration: underline; }
+
+.row-fail td { background: #fdd !important; }
+.row-fail.sel td { background: #f4a0a0 !important; }

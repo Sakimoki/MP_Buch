@@ -2,8 +2,7 @@ const SECTIONS = [
   ['Gerätekennzeichnung (§14 MPBetreibV)', [
     ['Bezeichnung', 'bezeichnung'],
     ['Art / Typ', 'art_typ'],
-    ['Seriennummer', 'seriennummer'],
-    ['Loscode', 'loscode'],
+    ['Seriennummer / Loscode', 'seriennummer'],
     ['Anschaffungsjahr', 'anschaffungsjahr'],
     ['Inbetriebnahme', 'inbetriebnahmedatum'],
     ['Außerdienststellung', 'ausserdienst_datum'],
@@ -24,15 +23,20 @@ const SECTIONS = [
     ['Implantierbar', 'implantierbar', 'bool'],
     ['Einmalprodukt', 'einmalprodukt', 'bool'],
     ['Steril', 'steril', 'bool'],
-    ['Zweckbestimmung', 'zweckbestimmung'],
   ]],
   ['Betreiber / Standort', [
-    ['Betreiber', 'betreiber'],
+    ['Standort', 'betreiber'],
     ['Adresse', 'betreiber_anschrift'],
     ['Tel', 'betreiber_tel'],
     ['E-Mail', 'betreiber_email'],
     ['Inventarnummer', 'inventarnummer'],
     ['Verantwortliche Person', 'verantwortliche_person'],
+    ['Betreiber', 'betreiber_typ'],
+  ]],
+  ['MTK / Anlage 2', [
+    ['MTK/Anlage2 Relevant', 'mtk_anlage2'],
+    ['MTK (Fälligkeit)', 'mtk_datum'],
+    ['Wartung (Fälligkeit)', 'wartung_datum'],
   ]],
   ['IT-Sicherheit', [
     ['Netzwerkanbindung', 'netzwerkanbindung', 'bool'],

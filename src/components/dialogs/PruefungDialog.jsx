@@ -1,16 +1,21 @@
 import { useRef, useEffect, useState } from 'react'
 import { createPruefung } from '../../api/api.js'
+import { useApp } from '../../App.jsx'
 
 const INITIAL = {
-  art: '', datum: '', naechste_faelligkeit: '', pruefer: '', ergebnis: '',
+  art: '', datum: '', naechste_faelligkeit: '', pruefer: '', firma: '', ergebnis: '',
   messwerte: '', messverfahren: '', maengel: '', korrektivmassnahmen: '', bemerkungen: '',
 }
 
 export default function PruefungDialog({ geraetId, onClose, onSaved }) {
   const ref = useRef()
+  const { herstellerList, loadHersteller } = useApp()
   const [form, setForm] = useState(INITIAL)
 
-  useEffect(() => { ref.current?.showModal() }, [])
+  useEffect(() => {
+    ref.current?.showModal()
+    loadHersteller()
+  }, [])
 
   const set = (e) => {
     const { name, value } = e.target
@@ -26,6 +31,7 @@ export default function PruefungDialog({ geraetId, onClose, onSaved }) {
         datum: form.datum,
         naechste_faelligkeit: form.naechste_faelligkeit || null,
         pruefer: form.pruefer || null,
+        firma: form.firma || null,
         ergebnis: form.ergebnis || null,
         messwerte: form.messwerte || null,
         messverfahren: form.messverfahren || null,
@@ -39,24 +45,31 @@ export default function PruefungDialog({ geraetId, onClose, onSaved }) {
 
   return (
     <dialog ref={ref} onCancel={onClose} style={{ width: 540 }}>
-      <div className="dlg-hd">Prüfung / Wartung erfassen</div>
+      <div className="dlg-hd">MTK / Wartung erfassen</div>
       <div className="dlg-body">
         <div className="form-row"><label>Art *</label>
           <select name="art" value={form.art} onChange={set}>
             <option value=""></option>
-            <option>STK</option><option>MTK</option><option>Wartung</option>
-            <option>Reparatur</option><option>IT-Sicherheitsprüfung</option><option>Kalibrierung</option>
+            <option>MTK</option>
+            <option>Wartung</option>
           </select></div>
         <div className="form-row"><label>Datum *</label>
           <input type="date" name="datum" value={form.datum} onChange={set} /></div>
         <div className="form-row"><label>Nächste Fälligkeit</label>
           <input type="date" name="naechste_faelligkeit" value={form.naechste_faelligkeit} onChange={set} /></div>
-        <div className="form-row"><label>Prüfer / Firma</label>
+        <div className="form-row"><label>Prüfer</label>
           <input type="text" name="pruefer" value={form.pruefer} onChange={set} /></div>
+        <div className="form-row"><label>Firma</label>
+          <select name="firma" value={form.firma} onChange={set}>
+            <option value="">— Bitte wählen —</option>
+            {herstellerList.map(h => <option key={h.id} value={h.name}>{h.name}</option>)}
+          </select></div>
         <div className="form-row"><label>Ergebnis</label>
           <select name="ergebnis" value={form.ergebnis} onChange={set}>
             <option value=""></option>
-            <option>Bestanden</option><option>Bedingt bestanden</option><option>Nicht bestanden</option>
+            <option>Bestanden</option>
+            <option>Bedingt bestanden</option>
+            <option>Nicht bestanden</option>
           </select></div>
         <div className="form-row"><label>Messwerte</label>
           <input type="text" name="messwerte" value={form.messwerte} onChange={set} placeholder="z.B. Ableitstrom 42 µA" /></div>

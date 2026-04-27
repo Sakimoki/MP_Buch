@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react'
 import { getGeraetById } from '../api/api.js'
 import { useApp } from '../App.jsx'
-import GeraetedatenTab from './tabs/GeraetedatenTab.jsx'
-import EinweisungenTab from './tabs/EinweisungenTab.jsx'
-import UebergabenTab   from './tabs/UebergabenTab.jsx'
-import PruefungenTab   from './tabs/PruefungenTab.jsx'
-import DokumenteTab    from './tabs/DokumenteTab.jsx'
-import VorkommnisseTab from './tabs/VorkommnisseTab.jsx'
+import GeraetedatenTab      from './tabs/GeraetedatenTab.jsx'
+import EinweisungenTab      from './tabs/EinweisungenTab.jsx'
+import UebergabenTab        from './tabs/UebergabenTab.jsx'
+import PruefungenTab        from './tabs/PruefungenTab.jsx'
+import DokumenteTab         from './tabs/DokumenteTab.jsx'
+import StorungsmeldungenTab from './tabs/StorungsmeldungenTab.jsx'
 
 const TABS = [
   { key: 'detail', label: 'Gerätedaten' },
   { key: 'einw',   label: 'Einweisungen' },
-  { key: 'ueberg', label: 'Übergabe' },
-  { key: 'pruef',  label: 'STK / Wartung' },
+  { key: 'ueberg', label: 'Wartung' },
+  { key: 'pruef',  label: 'MTK/Wartung' },
   { key: 'dok',    label: 'Gebrauchsanweisungen' },
-  { key: 'vork',   label: 'Vorkommnisse' },
+  { key: 'stoer',  label: 'Störungsmeldungen' },
 ]
 
 export default function DeviceDetail() {
@@ -63,8 +63,8 @@ export default function DeviceDetail() {
         <DokumenteTab geraetId={selectedGeraetId} />
       </div>
 
-      <div id="tab-vork" className={`tab-pane${activeTab === 'vork' ? ' active' : ''}`}>
-        <VorkommnisseTab geraetId={selectedGeraetId} />
+      <div id="tab-stoer" className={`tab-pane${activeTab === 'stoer' ? ' active' : ''}`}>
+        <StorungsmeldungenTab geraetId={selectedGeraetId} />
       </div>
     </div>
   )

@@ -6,25 +6,28 @@ const BOOL_FIELDS = ['aktives_geraet', 'implantierbar', 'einmalprodukt', 'steril
 const INT_FIELDS  = ['hersteller_id', 'betreiber_id']
 
 const INITIAL = {
-  bezeichnung: '', art_typ: '', seriennummer: '', loscode: '',
+  bezeichnung: '', art_typ: '', seriennummer: '',
   anschaffungsjahr: '', inbetriebnahmedatum: '', ausserdienst_datum: '',
   hersteller_id: '', hersteller_name: '', hersteller_anschrift: '',
   hersteller_tel: '', hersteller_email: '', ce_jahr: '',
   risikoklasse: '', udi_di: '', udi_pi: '', emdn_code: '',
   aktives_geraet: false, implantierbar: false, einmalprodukt: false, steril: false,
-  zweckbestimmung: '',
   betreiber_id: '', betreiber: '', betreiber_anschrift: '',
   betreiber_tel: '', betreiber_email: '',
   inventarnummer: '', verantwortliche_person: '',
+  betreiber_typ: 'Cooperative Mensch',
+  mtk_anlage2: 'nein', mtk_datum: '', wartung_datum: '',
   netzwerkanbindung: false, softwareversion: '', bemerkungen: '',
 }
 
 export default function GeraetDialog({ mode, onClose, onSaved }) {
   const ref = useRef()
   const { selectedGeraetId, herstellerList, betreiberList, loadHersteller, loadBetreiber } = useApp()
-  const [form, setForm]             = useState(INITIAL)
+  const [form, setForm]               = useState(INITIAL)
   const [showHstHint, setShowHstHint] = useState(false)
   const [showBtrHint, setShowBtrHint] = useState(false)
+  const [mtkManual, setMtkManual]     = useState(false)
+  const [wartManual, setWartManual]   = useState(false)
 
   useEffect(() => {
     ref.current?.showModal()
@@ -40,13 +43,47 @@ export default function GeraetDialog({ mode, onClose, onSaved }) {
         setForm(f)
         setShowHstHint(!!d.hersteller_id)
         setShowBtrHint(!!d.betreiber_id)
+        if (d.mtk_datum) setMtkManual(true)
+        if (d.wartung_datum) setWartManual(true)
       })
     }
   }, [])
 
+  // Auto-berechne MTK-Datum
+  useEffect(() => {
+    if (mtkManual) return
+    if (!form.inbetriebnahmedatum || form.mtk_anlage2 === 'nein') {
+      setForm(p => ({ ...p, mtk_datum: '' }))
+      return
+    }
+    const base = new Date(form.inbetriebnahmedatum)
+    const years = form.mtk_anlage2 === 'Infrarot-Strahlungsthermometer' ? 1 : 2
+    base.setFullYear(base.getFullYear() + years)
+    setForm(p => ({ ...p, mtk_datum: base.toISOString().split('T')[0] }))
+  }, [form.mtk_anlage2, form.inbetriebnahmedatum, mtkManual])
+
+  // Auto-berechne Wartungs-Datum
+  useEffect(() => {
+    if (wartManual) return
+    if (!form.inbetriebnahmedatum) return
+    const base = new Date(form.inbetriebnahmedatum)
+    base.setFullYear(base.getFullYear() + 2)
+    setForm(p => ({ ...p, wartung_datum: base.toISOString().split('T')[0] }))
+  }, [form.inbetriebnahmedatum, wartManual])
+
   const set = (e) => {
     const { name, value, type, checked } = e.target
     setForm(p => ({ ...p, [name]: type === 'checkbox' ? checked : value }))
+  }
+
+  const setMtk = (e) => {
+    setMtkManual(true)
+    set(e)
+  }
+
+  const setWart = (e) => {
+    setWartManual(true)
+    set(e)
   }
 
   const onHerstellerSelect = (id) => {
@@ -83,7 +120,7 @@ export default function GeraetDialog({ mode, onClose, onSaved }) {
     Object.keys(INITIAL).forEach(k => {
       if (BOOL_FIELDS.includes(k)) body[k] = form[k] ? 1 : 0
       else if (INT_FIELDS.includes(k)) body[k] = form[k] ? parseInt(form[k], 10) : null
-      else body[k] = form[k].trim?.() || null
+      else body[k] = form[k]?.trim?.() !== undefined ? (form[k].trim() || null) : form[k]
     })
     try {
       if (mode === 'edit') {
@@ -107,10 +144,8 @@ export default function GeraetDialog({ mode, onClose, onSaved }) {
           <input type="text" name="bezeichnung" value={form.bezeichnung} onChange={set} /></div>
         <div className="form-row"><label>Art / Typ</label>
           <input type="text" name="art_typ" value={form.art_typ} onChange={set} /></div>
-        <div className="form-row"><label>Seriennummer</label>
+        <div className="form-row"><label>Seriennummer / Loscode</label>
           <input type="text" name="seriennummer" value={form.seriennummer} onChange={set} /></div>
-        <div className="form-row"><label>Loscode</label>
-          <input type="text" name="loscode" value={form.loscode} onChange={set} /></div>
         <div className="form-row"><label>Anschaffungsjahr</label>
           <input type="text" name="anschaffungsjahr" value={form.anschaffungsjahr} onChange={set} placeholder="z.B. 2023" /></div>
         <div className="form-row"><label>Inbetriebnahmedatum</label>
@@ -159,8 +194,6 @@ export default function GeraetDialog({ mode, onClose, onSaved }) {
           <input type="checkbox" name="einmalprodukt" checked={form.einmalprodukt} onChange={set} /></div>
         <div className="form-row"><label>Steril</label>
           <input type="checkbox" name="steril" checked={form.steril} onChange={set} /></div>
-        <div className="form-row"><label>Zweckbestimmung</label>
-          <textarea name="zweckbestimmung" value={form.zweckbestimmung} onChange={set} rows={3} /></div>
 
         <div className="form-sec">Betreiber / Standort</div>
         <div className="form-row">
@@ -171,7 +204,7 @@ export default function GeraetDialog({ mode, onClose, onSaved }) {
           </select>
         </div>
         {showBtrHint && <div className="sel-hint">Felder wurden aus den Stammdaten befüllt — bei Bedarf anpassbar.</div>}
-        <div className="form-row"><label>Betreiber / Institution</label>
+        <div className="form-row"><label>Standort</label>
           <input type="text" name="betreiber" value={form.betreiber} onChange={set} /></div>
         <div className="form-row"><label>Adresse</label>
           <input type="text" name="betreiber_anschrift" value={form.betreiber_anschrift} onChange={set} placeholder="Straße, PLZ Ort" /></div>
@@ -183,6 +216,25 @@ export default function GeraetDialog({ mode, onClose, onSaved }) {
           <input type="text" name="inventarnummer" value={form.inventarnummer} onChange={set} /></div>
         <div className="form-row"><label>Verantwortliche Person</label>
           <input type="text" name="verantwortliche_person" value={form.verantwortliche_person} onChange={set} /></div>
+        <div className="form-row"><label>Betreiber</label>
+          <select name="betreiber_typ" value={form.betreiber_typ} onChange={set}>
+            <option>Versorgender</option>
+            <option>Leistungserbringer/Dritte</option>
+            <option>Cooperative Mensch</option>
+          </select></div>
+
+        <div className="form-sec">MTK / Anlage 2</div>
+        <div className="form-row"><label>MTK/Anlage2 Relevant</label>
+          <select name="mtk_anlage2" value={form.mtk_anlage2} onChange={set}>
+            <option>nein</option>
+            <option>Elektrothermometer</option>
+            <option>Infrarot-Strahlungsthermometer</option>
+            <option>Blutdruckmessung</option>
+          </select></div>
+        <div className="form-row"><label>MTK (Fälligkeit)</label>
+          <input type="date" name="mtk_datum" value={form.mtk_datum} onChange={setMtk} /></div>
+        <div className="form-row"><label>Wartung (Fälligkeit)</label>
+          <input type="date" name="wartung_datum" value={form.wartung_datum} onChange={setWart} /></div>
 
         <div className="form-sec">IT-Sicherheit (§14 Abs. 3 MPBetreibV)</div>
         <div className="form-row"><label>Netzwerkanbindung</label>

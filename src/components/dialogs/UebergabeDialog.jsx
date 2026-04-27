@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { createUebergabe, uploadProtokoll } from '../../api/api.js'
 
-const INITIAL = { datum: '', pruefer: '', empfaenger: '', funktionspruefung: 'Nicht geprüft', bemerkungen: '' }
+const INITIAL = { datum: '', empfaenger: '', bemerkungen: '' }
 
 export default function UebergabeDialog({ geraetId, onClose, onSaved }) {
   const ref     = useRef()
@@ -21,9 +21,7 @@ export default function UebergabeDialog({ geraetId, onClose, onSaved }) {
       const { id } = await createUebergabe({
         geraet_id: geraetId,
         datum: form.datum,
-        pruefer: form.pruefer || null,
         empfaenger: form.empfaenger || null,
-        funktionspruefung: form.funktionspruefung,
         bemerkungen: form.bemerkungen || null,
       })
       if (fileRef.current?.files?.length) {
@@ -37,20 +35,12 @@ export default function UebergabeDialog({ geraetId, onClose, onSaved }) {
 
   return (
     <dialog ref={ref} onCancel={onClose} style={{ width: 520 }}>
-      <div className="dlg-hd">Übergabe erfassen</div>
+      <div className="dlg-hd">Wartung erfassen</div>
       <div className="dlg-body">
         <div className="form-row"><label>Datum *</label>
           <input type="date" name="datum" value={form.datum} onChange={set} /></div>
-        <div className="form-row"><label>Prüfer</label>
-          <input type="text" name="pruefer" value={form.pruefer} onChange={set} /></div>
         <div className="form-row"><label>Empfänger</label>
           <input type="text" name="empfaenger" value={form.empfaenger} onChange={set} /></div>
-        <div className="form-row"><label>Funktionsprüfung</label>
-          <select name="funktionspruefung" value={form.funktionspruefung} onChange={set}>
-            <option>Nicht geprüft</option>
-            <option>Bestanden</option>
-            <option>Nicht bestanden</option>
-          </select></div>
         <div className="form-row"><label>Protokoll (Datei)</label>
           <input type="file" ref={fileRef} /></div>
         <div className="form-row"><label>Bemerkungen</label>

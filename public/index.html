@@ -1,1602 +1,2439 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Medizinprodukte-Datenbank (MPBetreibV 2025)</title>
-<style>
-:root {
-  --c-toolbar: #007ba5;
-  --c-title:   #2c3e50;
-  --c-add:     #27ae60;
-  --c-del:     #e74c3c;
-  --c-warn:    #e67e22;
-  --c-sec:     #dce6f0;
-  --c-overdue: #ffe0e0;
-  --c-ok:      #e8f8e8;
-  --c-bg:      #f0f0f0;
-  --c-panel:   #f9f9f9;
-  --c-border:  #ddd;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: Helvetica, Arial, sans-serif;
-  font-size: 13px;
-  background: var(--c-bg);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  color: #333;
-}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medizinprodukte-Datenbank (MPBetreibV 2025)</title>
+    <style>
+      :root {
+        --c-toolbar: #007ba5;
+        --c-title: #2c3e50;
+        --c-add: #27ae60;
+        --c-del: #e74c3c;
+        --c-warn: #e67e22;
+        --c-sec: #dce6f0;
+        --c-overdue: #ffe0e0;
+        --c-ok: #e8f8e8;
+        --c-bg: #f0f0f0;
+        --c-panel: #f9f9f9;
+        --c-border: #ddd;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 13px;
+        background: var(--c-bg);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        color: #333;
+      }
 
-/* ── Toolbar ── */
-#toolbar {
-  background: var(--c-toolbar);
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-#app-title {
-  background: var(--c-title);
-  color: #fff;
-  font-size: 13px;
-  font-weight: bold;
-  padding: 5px 12px;
-  white-space: nowrap;
-}
-.tbtn {
-  border: none;
-  color: #fff;
-  padding: 5px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  background: rgba(255,255,255,0.18);
-  transition: background .15s;
-}
-.tbtn:hover { background: rgba(255,255,255,0.32); }
-.tbtn.add  { background: var(--c-add); }
-.tbtn.add:hover { filter: brightness(1.1); }
-.tbtn.del  { background: var(--c-del); }
-.tbtn.del:hover { filter: brightness(1.1); }
-#search-wrap { margin-left: auto; display: flex; align-items: center; gap: 5px; }
-#search-wrap label { color: #fff; font-size: 12px; }
-#search-input { padding: 4px 8px; border: none; font-size: 12px; width: 200px; border-radius: 2px; }
+      /* ── Toolbar ── */
+      #toolbar {
+        background: var(--c-toolbar);
+        padding: 6px 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      #app-title {
+        background: var(--c-title);
+        color: #fff;
+        font-size: 13px;
+        font-weight: bold;
+        padding: 5px 12px;
+        white-space: nowrap;
+      }
+      .tbtn {
+        border: none;
+        color: #fff;
+        padding: 5px 12px;
+        cursor: pointer;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.18);
+        transition: background 0.15s;
+      }
+      .tbtn:hover {
+        background: rgba(255, 255, 255, 0.32);
+      }
+      .tbtn.add {
+        background: var(--c-add);
+      }
+      .tbtn.add:hover {
+        filter: brightness(1.1);
+      }
+      .tbtn.del {
+        background: var(--c-del);
+      }
+      .tbtn.del:hover {
+        filter: brightness(1.1);
+      }
+      #search-wrap {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      #search-wrap label {
+        color: #fff;
+        font-size: 12px;
+      }
+      #search-input {
+        padding: 4px 8px;
+        border: none;
+        font-size: 12px;
+        width: 200px;
+        border-radius: 2px;
+      }
 
-/* ── Stammdaten-Dialog ── */
-.mgmt-wrap { display: flex; gap: 0; height: 420px; }
-.mgmt-list { width: 260px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--c-border); }
-.mgmt-list-scroll { flex: 1; overflow-y: auto; }
-.mgmt-form { flex: 1; overflow-y: auto; padding: 4px 12px 8px; }
-.mgmt-toolbar { padding: 5px 8px; display: flex; gap: 6px; background: #f0f0f0; border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
-.mgmt-toolbar button { border: none; color: #fff; padding: 4px 10px; cursor: pointer; font-size: 12px; }
-.sel-hint { font-size: 11px; color: #007ba5; background: #e8f4fb; padding: 3px 8px; border-left: 3px solid #007ba5; margin-bottom: 6px; display: none; }
-.form-row select { flex: 1; border: 1px solid #ccc; padding: 4px 7px; font-size: 12px; font-family: inherit; border-radius: 2px; }
+      /* ── Stammdaten-Dialog ── */
+      .mgmt-wrap {
+        display: flex;
+        gap: 0;
+        height: 420px;
+      }
+      .mgmt-list {
+        width: 260px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--c-border);
+      }
+      .mgmt-list-scroll {
+        flex: 1;
+        overflow-y: auto;
+      }
+      .mgmt-form {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 12px 8px;
+      }
+      .mgmt-toolbar {
+        padding: 5px 8px;
+        display: flex;
+        gap: 6px;
+        background: #f0f0f0;
+        border-bottom: 1px solid var(--c-border);
+        flex-shrink: 0;
+      }
+      .mgmt-toolbar button {
+        border: none;
+        color: #fff;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .sel-hint {
+        font-size: 11px;
+        color: #007ba5;
+        background: #e8f4fb;
+        padding: 3px 8px;
+        border-left: 3px solid #007ba5;
+        margin-bottom: 6px;
+        display: none;
+      }
+      .form-row select {
+        flex: 1;
+        border: 1px solid #ccc;
+        padding: 4px 7px;
+        font-size: 12px;
+        font-family: inherit;
+        border-radius: 2px;
+      }
 
-/* ── Main split ── */
-#main {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  padding: 8px;
-  gap: 8px;
-}
+      /* ── Main split ── */
+      #main {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+        padding: 8px;
+        gap: 8px;
+      }
 
-/* ── List panel ── */
-#list-panel {
-  width: 310px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--c-border);
-  background: var(--c-panel);
-  overflow: hidden;
-}
-#list-heading {
-  font-size: 11px;
-  font-weight: bold;
-  padding: 4px 8px;
-  background: #e8e8e8;
-  border-bottom: 1px solid var(--c-border);
-  flex-shrink: 0;
-}
-#list-scroll { flex: 1; overflow-y: auto; }
+      /* ── List panel ── */
+      #list-panel {
+        width: 310px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--c-border);
+        background: var(--c-panel);
+        overflow: hidden;
+      }
+      #list-heading {
+        font-size: 11px;
+        font-weight: bold;
+        padding: 4px 8px;
+        background: #e8e8e8;
+        border-bottom: 1px solid var(--c-border);
+        flex-shrink: 0;
+      }
+      #list-scroll {
+        flex: 1;
+        overflow-y: auto;
+      }
 
-/* ── Tables ── */
-.dt { width: 100%; border-collapse: collapse; font-size: 12px; }
-.dt th {
-  background: #e0e0e0;
-  padding: 4px 6px;
-  text-align: left;
-  border-bottom: 2px solid #bbb;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  white-space: nowrap;
-}
-.dt td { padding: 3px 6px; border-bottom: 1px solid #eee; }
-.dt tbody tr { cursor: pointer; }
-.dt tbody tr:hover td { background: #e0ecf8 !important; }
-.dt tbody tr.sel td { background: #c5daf5 !important; }
-.dt tbody tr.overdue td { background: var(--c-overdue); }
-.dt tbody tr.ok-row  td { background: var(--c-ok); }
-.dt tbody tr.overdue.sel td { background: #ffb0b0 !important; }
+      /* ── Tables ── */
+      .dt {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .dt th {
+        background: #e0e0e0;
+        padding: 4px 6px;
+        text-align: left;
+        border-bottom: 2px solid #bbb;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        white-space: nowrap;
+      }
+      .dt td {
+        padding: 3px 6px;
+        border-bottom: 1px solid #eee;
+      }
+      .dt tbody tr {
+        cursor: pointer;
+      }
+      .dt tbody tr:hover td {
+        background: #e0ecf8 !important;
+      }
+      .dt tbody tr.sel td {
+        background: #c5daf5 !important;
+      }
+      .dt tbody tr.overdue td {
+        background: var(--c-overdue);
+      }
+      .dt tbody tr.ok-row td {
+        background: var(--c-ok);
+      }
+      .dt tbody tr.overdue.sel td {
+        background: #ffb0b0 !important;
+      }
 
-/* ── Detail panel ── */
-#detail-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--c-border);
-  background: var(--c-panel);
-  overflow: hidden;
-}
+      /* ── Detail panel ── */
+      #detail-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--c-border);
+        background: var(--c-panel);
+        overflow: hidden;
+      }
 
-/* ── Tabs ── */
-#tabs {
-  display: flex;
-  border-bottom: 2px solid var(--c-toolbar);
-  flex-shrink: 0;
-}
-.tab-btn {
-  border: none;
-  background: #e4e4e4;
-  padding: 6px 14px;
-  cursor: pointer;
-  font-size: 12px;
-  border-right: 1px solid #ccc;
-  transition: background .1s;
-  white-space: nowrap;
-}
-.tab-btn:hover { background: #d4dce6; }
-.tab-btn.active {
-  background: var(--c-panel);
-  font-weight: bold;
-  color: var(--c-toolbar);
-  border-bottom: 2px solid var(--c-panel);
-  margin-bottom: -2px;
-}
-.tab-pane { display: none; flex: 1; overflow: auto; flex-direction: column; }
-.tab-pane.active { display: flex; }
+      /* ── Tabs ── */
+      #tabs {
+        display: flex;
+        border-bottom: 2px solid var(--c-toolbar);
+        flex-shrink: 0;
+      }
+      .tab-btn {
+        border: none;
+        background: #e4e4e4;
+        padding: 6px 14px;
+        cursor: pointer;
+        font-size: 12px;
+        border-right: 1px solid #ccc;
+        transition: background 0.1s;
+        white-space: nowrap;
+      }
+      .tab-btn:hover {
+        background: #d4dce6;
+      }
+      .tab-btn.active {
+        background: var(--c-panel);
+        font-weight: bold;
+        color: var(--c-toolbar);
+        border-bottom: 2px solid var(--c-panel);
+        margin-bottom: -2px;
+      }
+      .tab-pane {
+        display: none;
+        flex: 1;
+        overflow: auto;
+        flex-direction: column;
+      }
+      .tab-pane.active {
+        display: flex;
+      }
 
-/* ── Gerätedaten tab ── */
-#tab-detail { padding: 4px 8px 16px; overflow-y: auto; }
-.sec-hd {
-  background: var(--c-sec);
-  padding: 4px 8px;
-  font-weight: bold;
-  font-size: 12px;
-  margin: 10px 0 3px;
-  border-left: 3px solid var(--c-toolbar);
-}
-.frow { display: flex; padding: 2px 8px; }
-.flabel { width: 190px; min-width: 190px; color: #666; font-size: 12px; padding-top: 1px; }
-.fval { color: #222; font-size: 12px; word-break: break-word; }
-.audit { text-align: center; color: #bbb; font-size: 11px; padding: 10px 0 4px; }
-#detail-placeholder { color: #aaa; text-align: center; margin-top: 60px; font-size: 14px; }
+      /* ── Gerätedaten tab ── */
+      #tab-detail {
+        padding: 4px 8px 16px;
+        overflow-y: auto;
+      }
+      .sec-hd {
+        background: var(--c-sec);
+        padding: 4px 8px;
+        font-weight: bold;
+        font-size: 12px;
+        margin: 10px 0 3px;
+        border-left: 3px solid var(--c-toolbar);
+      }
+      .frow {
+        display: flex;
+        padding: 2px 8px;
+      }
+      .flabel {
+        width: 190px;
+        min-width: 190px;
+        color: #666;
+        font-size: 12px;
+        padding-top: 1px;
+      }
+      .fval {
+        color: #222;
+        font-size: 12px;
+        word-break: break-word;
+      }
+      .audit {
+        text-align: center;
+        color: #bbb;
+        font-size: 11px;
+        padding: 10px 0 4px;
+      }
+      #detail-placeholder {
+        color: #aaa;
+        text-align: center;
+        margin-top: 60px;
+        font-size: 14px;
+      }
 
-/* ── Sub-tab toolbars ── */
-.sub-toolbar {
-  padding: 5px 8px;
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-  background: #f0f0f0;
-  border-bottom: 1px solid var(--c-border);
-  align-items: center;
-}
-.sub-toolbar button {
-  border: none;
-  color: #fff;
-  padding: 4px 12px;
-  cursor: pointer;
-  font-size: 12px;
-}
-.sub-toolbar .add  { background: var(--c-add); }
-.sub-toolbar .add:hover { filter: brightness(1.1); }
-.sub-toolbar .del  { background: var(--c-del); }
-.sub-toolbar .del:hover { filter: brightness(1.1); }
-.sub-toolbar .warn { background: var(--c-warn); }
-.sub-toolbar .warn:hover { filter: brightness(1.1); }
-.table-scroll { flex: 1; overflow-y: auto; }
+      /* ── Sub-tab toolbars ── */
+      .sub-toolbar {
+        padding: 5px 8px;
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+        background: #f0f0f0;
+        border-bottom: 1px solid var(--c-border);
+        align-items: center;
+      }
+      .sub-toolbar button {
+        border: none;
+        color: #fff;
+        padding: 4px 12px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .sub-toolbar .add {
+        background: var(--c-add);
+      }
+      .sub-toolbar .add:hover {
+        filter: brightness(1.1);
+      }
+      .sub-toolbar .del {
+        background: var(--c-del);
+      }
+      .sub-toolbar .del:hover {
+        filter: brightness(1.1);
+      }
+      .sub-toolbar .warn {
+        background: var(--c-warn);
+      }
+      .sub-toolbar .warn:hover {
+        filter: brightness(1.1);
+      }
+      .table-scroll {
+        flex: 1;
+        overflow-y: auto;
+      }
 
-/* ── Dokumente: file badge ── */
-.file-link { color: var(--c-toolbar); text-decoration: none; font-size: 11px; }
-.file-link:hover { text-decoration: underline; }
+      /* ── Dokumente: file badge ── */
+      .file-link {
+        color: var(--c-toolbar);
+        text-decoration: none;
+        font-size: 11px;
+      }
+      .file-link:hover {
+        text-decoration: underline;
+      }
 
-/* ── Statusbar ── */
-#statusbar {
-  background: #ecf0f1;
-  border-top: 1px solid var(--c-border);
-  padding: 2px 10px;
-  font-size: 11px;
-  color: #555;
-  flex-shrink: 0;
-}
+      /* ── Statusbar ── */
+      #statusbar {
+        background: #ecf0f1;
+        border-top: 1px solid var(--c-border);
+        padding: 2px 10px;
+        font-size: 11px;
+        color: #555;
+        flex-shrink: 0;
+      }
 
-/* ── Dialogs ── */
-dialog {
-  border: none;
-  border-radius: 4px;
-  box-shadow: 0 6px 28px rgba(0,0,0,.35);
-  padding: 0;
-  max-height: 92vh;
-  max-width: 95vw;
-}
-dialog::backdrop { background: rgba(0,0,0,.42); }
-.dlg-hd {
-  background: var(--c-title);
-  color: #fff;
-  padding: 10px 16px;
-  font-weight: bold;
-  font-size: 14px;
-}
-.dlg-body {
-  padding: 10px 16px 6px;
-  overflow-y: auto;
-  max-height: calc(92vh - 100px);
-}
-.dlg-ft {
-  padding: 10px 16px;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  gap: 8px;
-  background: #f5f5f5;
-}
-.dlg-ft button {
-  border: none;
-  padding: 6px 18px;
-  cursor: pointer;
-  font-size: 13px;
-  border-radius: 2px;
-}
-.dlg-ft .save   { background: var(--c-add);  color: #fff; }
-.dlg-ft .savew  { background: var(--c-warn); color: #fff; }
-.dlg-ft .cancel { background: #bbb; color: #fff; }
+      /* ── Dialogs ── */
+      dialog {
+        border: none;
+        border-radius: 4px;
+        box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
+        padding: 0;
+        max-height: 92vh;
+        max-width: 95vw;
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.42);
+      }
+      .dlg-hd {
+        background: var(--c-title);
+        color: #fff;
+        padding: 10px 16px;
+        font-weight: bold;
+        font-size: 14px;
+      }
+      .dlg-body {
+        padding: 10px 16px 6px;
+        overflow-y: auto;
+        max-height: calc(92vh - 100px);
+      }
+      .dlg-ft {
+        padding: 10px 16px;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        gap: 8px;
+        background: #f5f5f5;
+      }
+      .dlg-ft button {
+        border: none;
+        padding: 6px 18px;
+        cursor: pointer;
+        font-size: 13px;
+        border-radius: 2px;
+      }
+      .dlg-ft .save {
+        background: var(--c-add);
+        color: #fff;
+      }
+      .dlg-ft .savew {
+        background: var(--c-warn);
+        color: #fff;
+      }
+      .dlg-ft .cancel {
+        background: #bbb;
+        color: #fff;
+      }
 
-/* ── Form inside dialog ── */
-.form-sec {
-  background: var(--c-sec);
-  padding: 4px 8px;
-  font-weight: bold;
-  font-size: 12px;
-  margin: 10px 0 4px;
-  border-left: 3px solid var(--c-toolbar);
-}
-.form-row {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 5px;
-  gap: 8px;
-}
-.form-row label {
-  width: 200px;
-  min-width: 200px;
-  font-size: 12px;
-  padding-top: 5px;
-  color: #444;
-}
-.form-row input[type=text],
-.form-row input[type=date],
-.form-row input[type=email],
-.form-row select,
-.form-row textarea {
-  flex: 1;
-  border: 1px solid #ccc;
-  padding: 4px 7px;
-  font-size: 12px;
-  font-family: inherit;
-  border-radius: 2px;
-}
-.form-row input:focus,
-.form-row select:focus,
-.form-row textarea:focus {
-  outline: none;
-  border-color: var(--c-toolbar);
-  box-shadow: 0 0 0 2px rgba(0,123,165,.2);
-}
-.form-row textarea { resize: vertical; min-height: 52px; }
-.form-row input[type=checkbox] { margin-top: 5px; width: 16px; height: 16px; cursor: pointer; }
-.form-row input[type=file] { flex: 1; font-size: 12px; }
+      /* ── Form inside dialog ── */
+      .form-sec {
+        background: var(--c-sec);
+        padding: 4px 8px;
+        font-weight: bold;
+        font-size: 12px;
+        margin: 10px 0 4px;
+        border-left: 3px solid var(--c-toolbar);
+      }
+      .form-row {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 5px;
+        gap: 8px;
+      }
+      .form-row label {
+        width: 200px;
+        min-width: 200px;
+        font-size: 12px;
+        padding-top: 5px;
+        color: #444;
+      }
+      .form-row input[type="text"],
+      .form-row input[type="date"],
+      .form-row input[type="email"],
+      .form-row select,
+      .form-row textarea {
+        flex: 1;
+        border: 1px solid #ccc;
+        padding: 4px 7px;
+        font-size: 12px;
+        font-family: inherit;
+        border-radius: 2px;
+      }
+      .form-row input:focus,
+      .form-row select:focus,
+      .form-row textarea:focus {
+        outline: none;
+        border-color: var(--c-toolbar);
+        box-shadow: 0 0 0 2px rgba(0, 123, 165, 0.2);
+      }
+      .form-row textarea {
+        resize: vertical;
+        min-height: 52px;
+      }
+      .form-row input[type="checkbox"] {
+        margin-top: 5px;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+      }
+      .form-row input[type="file"] {
+        flex: 1;
+        font-size: 12px;
+      }
 
-/* ── Print: Bestandsliste ── */
-@media print {
-  body * { visibility: hidden; }
-  #print-area, #print-area * { visibility: visible; }
-  #print-area { position: fixed; top: 0; left: 0; width: 100%; }
-}
-</style>
-</head>
-<body>
-
-<!-- ── Toolbar ─────────────────────────────────────────────────────────────── -->
-<header id="toolbar">
-  <span id="app-title">Medizinprodukte-Datenbank</span>
-  <button class="tbtn add" onclick="openNewGeraet()">+ Neues Gerät</button>
-  <button class="tbtn"     onclick="openEditGeraet()">Bearbeiten</button>
-  <button class="tbtn del" onclick="deleteGeraet()">Löschen</button>
-  <span style="width:1px;height:22px;background:rgba(255,255,255,.3);margin:0 4px"></span>
-  <button class="tbtn" onclick="openHerstellerMgmt()" title="Hersteller-Stammdaten">🏭 Hersteller</button>
-  <button class="tbtn" onclick="openBetreiberMgmt()"  title="Betreiber-Stammdaten">🏥 Betreiber</button>
-  <button class="tbtn" onclick="openBestandsliste()"  title="Druckbare Bestandsliste">📋 Bestandsliste</button>
-  <div id="search-wrap">
-    <label for="search-input">Suche:</label>
-    <input id="search-input" type="text" placeholder="Bezeichnung, Typ, SN …" oninput="loadGeraete()">
-  </div>
-</header>
-
-<!-- ── Main ───────────────────────────────────────────────────────────────── -->
-<div id="main">
-
-  <!-- Linke Spalte: Bestandsverzeichnis -->
-  <div id="list-panel">
-    <div id="list-heading">Bestandsverzeichnis</div>
-    <div id="list-scroll">
-      <table class="dt" id="geraete-table">
-        <thead>
-          <tr>
-            <th style="width:36px">ID</th>
-            <th>Bezeichnung</th>
-            <th style="width:80px">Typ</th>
-            <th style="width:50px">Klasse</th>
-            <th style="width:90px">Betreiber</th>
-          </tr>
-        </thead>
-        <tbody id="geraete-tbody"></tbody>
-      </table>
-      <div id="geraete-cards" class="mobile-cards"></div>
-    </div>
-  </div>
-
-  <!-- Rechte Spalte: Detail-Tabs -->
-  <div id="detail-panel">
-    <div id="tabs">
-      <button class="tab-btn active" onclick="showTab('detail')">Gerätedaten</button>
-      <button class="tab-btn"        onclick="showTab('einw')">Einweisungen</button>
-      <button class="tab-btn"        onclick="showTab('ueberg')">Übergabe</button>
-      <button class="tab-btn"        onclick="showTab('pruef')">STK / Wartung</button>
-      <button class="tab-btn"        onclick="showTab('dok')">Gebrauchsanweisungen</button>
-      <button class="tab-btn"        onclick="showTab('vork')">Vorkommnisse</button>
-    </div>
-
-    <!-- Tab 1: Gerätedaten -->
-    <div id="tab-detail" class="tab-pane active">
-      <div id="detail-content">
-        <p id="detail-placeholder">Bitte ein Gerät aus der Liste auswählen.</p>
+      /* ── Print: Bestandsliste ── */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #print-area,
+        #print-area * {
+          visibility: visible;
+        }
+        #print-area {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── Toolbar ─────────────────────────────────────────────────────────────── -->
+    <header id="toolbar">
+      <span id="app-title">Medizinprodukte-Datenbank</span>
+      <button class="tbtn add" onclick="openNewGeraet()">+ Neues Gerät</button>
+      <button class="tbtn" onclick="openEditGeraet()">Bearbeiten</button>
+      <button class="tbtn del" onclick="deleteGeraet()">Löschen</button>
+      <span
+        style="
+          width: 1px;
+          height: 22px;
+          background: rgba(255, 255, 255, 0.3);
+          margin: 0 4px;
+        "
+      ></span>
+      <button
+        class="tbtn"
+        onclick="openHerstellerMgmt()"
+        title="Hersteller-Stammdaten"
+      >
+        🏭 Hersteller
+      </button>
+      <button
+        class="tbtn"
+        onclick="openBetreiberMgmt()"
+        title="Betreiber-Stammdaten"
+      >
+        🏥 Betreiber
+      </button>
+      <button
+        class="tbtn"
+        onclick="openBestandsliste()"
+        title="Druckbare Bestandsliste"
+      >
+        📋 Bestandsliste
+      </button>
+      <div id="search-wrap">
+        <label for="search-input">Suche:</label>
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Bezeichnung, Typ, SN …"
+          oninput="loadGeraete()"
+        />
       </div>
-      <div id="handbuch-section" style="display:none">
-        <div class="sec-hd" style="margin-top:10px">
-          Handbücher
-          <button class="dok-upload-btn" style="margin-left:10px" onclick="triggerUpload('handbuch', null)">+ Handbuch hochladen</button>
-          <span id="handbuch-progress" class="upload-progress"></span>
+    </header>
+
+    <!-- ── Main ───────────────────────────────────────────────────────────────── -->
+    <div id="main">
+      <!-- Linke Spalte: Bestandsverzeichnis -->
+      <div id="list-panel">
+        <div id="list-heading">Bestandsverzeichnis</div>
+        <div id="list-scroll">
+          <table class="dt" id="geraete-table">
+            <thead>
+              <tr>
+                <th style="width: 36px">ID</th>
+                <th>Bezeichnung</th>
+                <th style="width: 80px">Typ</th>
+                <th style="width: 50px">Klasse</th>
+                <th style="width: 90px">Betreiber</th>
+              </tr>
+            </thead>
+            <tbody id="geraete-tbody"></tbody>
+          </table>
+          <div id="geraete-cards" class="mobile-cards"></div>
         </div>
-        <table id="handbuch-table">
-          <thead><tr><th>Dateiname</th><th style="width:140px">Hochgeladen am</th><th style="width:80px"></th></tr></thead>
-          <tbody id="handbuch-tbody"></tbody>
-        </table>
+      </div>
+
+      <!-- Rechte Spalte: Detail-Tabs -->
+      <div id="detail-panel">
+        <div id="tabs">
+          <button class="tab-btn active" onclick="showTab('detail')">
+            Gerätedaten
+          </button>
+          <button class="tab-btn" onclick="showTab('einw')">
+            Lieferscheine
+          </button>
+          <button class="tab-btn" onclick="showTab('ueberg')">Übergabe</button>
+          <button class="tab-btn" onclick="showTab('pruef')">
+            STK / Wartung
+          </button>
+          <button class="tab-btn" onclick="showTab('dok')">
+            Gebrauchsanweisungen
+          </button>
+          <button class="tab-btn" onclick="showTab('vork')">
+            Vorkommnisse
+          </button>
+        </div>
+
+        <!-- Tab 1: Gerätedaten -->
+        <div id="tab-detail" class="tab-pane active">
+          <div id="detail-content">
+            <p id="detail-placeholder">
+              Bitte ein Gerät aus der Liste auswählen.
+            </p>
+          </div>
+          <div id="handbuch-section" style="display: none">
+            <div class="sec-hd" style="margin-top: 10px">
+              Handbücher
+              <button
+                class="dok-upload-btn"
+                style="margin-left: 10px"
+                onclick="triggerUpload('handbuch', null)"
+              >
+                + Handbuch hochladen
+              </button>
+              <span id="handbuch-progress" class="upload-progress"></span>
+            </div>
+            <table id="handbuch-table">
+              <thead>
+                <tr>
+                  <th>Dateiname</th>
+                  <th style="width: 140px">Hochgeladen am</th>
+                  <th style="width: 80px"></th>
+                </tr>
+              </thead>
+              <tbody id="handbuch-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: Einweisungen -->
+        <div id="tab-einw" class="tab-pane">
+          <div class="sub-toolbar">
+            <button class="add" onclick="openNewEinweisung()">
+              + Einweisung hinzufügen
+            </button>
+            <button class="del" onclick="deleteEinweisung()">Löschen</button>
+          </div>
+          <div class="table-scroll">
+            <table class="dt">
+              <thead>
+                <tr>
+                  <th style="width: 36px">ID</th>
+                  <th style="width: 95px">Datum</th>
+                  <th>Eingewiesene Person</th>
+                  <th>Beauftragte Person</th>
+                  <th style="width: 110px">Funktionsprüfung</th>
+                </tr>
+              </thead>
+              <tbody id="einw-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 3: Übergabe -->
+        <div id="tab-ueberg" class="tab-pane">
+          <div class="sub-toolbar">
+            <button class="add" onclick="openNewUebergabe()">
+              + Übergabe hinzufügen
+            </button>
+            <button class="del" onclick="deleteUebergabe()">Löschen</button>
+          </div>
+          <div class="table-scroll">
+            <table class="dt">
+              <thead>
+                <tr>
+                  <th style="width: 36px">ID</th>
+                  <th style="width: 95px">Datum</th>
+                  <th>Prüfer</th>
+                  <th>Empfänger</th>
+                  <th style="width: 150px">Funktionsprüfung</th>
+                  <th style="width: 120px">Protokoll</th>
+                </tr>
+              </thead>
+              <tbody id="ueberg-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 4: STK / Wartung -->
+        <div id="tab-pruef" class="tab-pane">
+          <div class="sub-toolbar">
+            <button class="add" onclick="openNewPruefung()">
+              + Prüfung hinzufügen
+            </button>
+            <button class="del" onclick="deletePruefung()">Löschen</button>
+          </div>
+          <div class="table-scroll">
+            <table class="dt">
+              <thead>
+                <tr>
+                  <th style="width: 36px">ID</th>
+                  <th style="width: 120px">Art</th>
+                  <th style="width: 95px">Datum</th>
+                  <th style="width: 115px">Nächste Fälligkeit</th>
+                  <th>Prüfer</th>
+                  <th style="width: 130px">Ergebnis</th>
+                  <th style="width: 110px">Protokoll</th>
+                </tr>
+              </thead>
+              <tbody id="pruef-tbody"></tbody>
+            </table>
+            <div id="pruef-cards" class="mobile-cards"></div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Gebrauchsanweisungen -->
+        <div id="tab-dok" class="tab-pane">
+          <div class="sub-toolbar">
+            <button class="add" onclick="triggerDokUpload()">
+              + Datei hochladen
+            </button>
+            <input
+              type="file"
+              id="dok-file-input"
+              style="display: none"
+              onchange="uploadDokument()"
+            />
+            <button class="del" onclick="deleteDokument()">Löschen</button>
+          </div>
+          <div class="table-scroll">
+            <table class="dt">
+              <thead>
+                <tr>
+                  <th style="width: 36px">ID</th>
+                  <th>Dateiname</th>
+                  <th>Beschreibung</th>
+                  <th style="width: 130px">Hochgeladen am</th>
+                  <th style="width: 70px">Öffnen</th>
+                </tr>
+              </thead>
+              <tbody id="dok-tbody"></tbody>
+            </table>
+            <div id="einw-cards" class="mobile-cards"></div>
+          </div>
+        </div>
+
+        <!-- Tab 6: Vorkommnisse -->
+        <div id="tab-vork" class="tab-pane">
+          <div class="sub-toolbar">
+            <button class="warn" onclick="openNewVorkommnis()">
+              + Vorkommnis hinzufügen
+            </button>
+            <button class="del" onclick="deleteVorkommnis()">Löschen</button>
+          </div>
+          <div class="table-scroll">
+            <table class="dt">
+              <thead>
+                <tr>
+                  <th style="width: 36px">ID</th>
+                  <th style="width: 95px">Datum</th>
+                  <th>Art der Störung</th>
+                  <th style="width: 120px">Meldung Behörde</th>
+                  <th style="width: 130px">Meldung Hersteller</th>
+                </tr>
+              </thead>
+              <tbody id="vork-tbody"></tbody>
+            </table>
+            <div id="vork-cards" class="mobile-cards"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Tab 2: Einweisungen -->
-    <div id="tab-einw" class="tab-pane">
-      <div class="sub-toolbar">
-        <button class="add" onclick="openNewEinweisung()">+ Einweisung hinzufügen</button>
-        <button class="del" onclick="deleteEinweisung()">Löschen</button>
-      </div>
-      <div class="table-scroll">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th style="width:36px">ID</th>
-              <th style="width:95px">Datum</th>
-              <th>Eingewiesene Person</th>
-              <th>Beauftragte Person</th>
-              <th style="width:110px">Funktionsprüfung</th>
-            </tr>
-          </thead>
-          <tbody id="einw-tbody"></tbody>
-        </table>
-      </div>
-    </div>
+    <!-- ── Statusbar ───────────────────────────────────────────────────────────── -->
+    <div id="statusbar">Bereit</div>
 
-    <!-- Tab 3: Übergabe -->
-    <div id="tab-ueberg" class="tab-pane">
-      <div class="sub-toolbar">
-        <button class="add" onclick="openNewUebergabe()">+ Übergabe hinzufügen</button>
-        <button class="del" onclick="deleteUebergabe()">Löschen</button>
-      </div>
-      <div class="table-scroll">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th style="width:36px">ID</th>
-              <th style="width:95px">Datum</th>
-              <th>Prüfer</th>
-              <th>Empfänger</th>
-              <th style="width:150px">Funktionsprüfung</th>
-              <th style="width:120px">Protokoll</th>
-            </tr>
-          </thead>
-          <tbody id="ueberg-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Tab 4: STK / Wartung -->
-    <div id="tab-pruef" class="tab-pane">
-      <div class="sub-toolbar">
-        <button class="add" onclick="openNewPruefung()">+ Prüfung hinzufügen</button>
-        <button class="del" onclick="deletePruefung()">Löschen</button>
-      </div>
-      <div class="table-scroll">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th style="width:36px">ID</th>
-              <th style="width:120px">Art</th>
-              <th style="width:95px">Datum</th>
-              <th style="width:115px">Nächste Fälligkeit</th>
-              <th>Prüfer</th>
-              <th style="width:130px">Ergebnis</th>
-              <th style="width:110px">Protokoll</th>
-            </tr>
-          </thead>
-          <tbody id="pruef-tbody"></tbody>
-        </table>
-        <div id="pruef-cards" class="mobile-cards"></div>
-      </div>
-    </div>
-
-    <!-- Tab 5: Gebrauchsanweisungen -->
-    <div id="tab-dok" class="tab-pane">
-      <div class="sub-toolbar">
-        <button class="add" onclick="triggerDokUpload()">+ Datei hochladen</button>
-        <input type="file" id="dok-file-input" style="display:none" onchange="uploadDokument()">
-        <button class="del" onclick="deleteDokument()">Löschen</button>
-      </div>
-      <div class="table-scroll">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th style="width:36px">ID</th>
-              <th>Dateiname</th>
-              <th>Beschreibung</th>
-              <th style="width:130px">Hochgeladen am</th>
-              <th style="width:70px">Öffnen</th>
-            </tr>
-          </thead>
-          <tbody id="dok-tbody"></tbody>
-        </table>
-        <div id="einw-cards" class="mobile-cards"></div>
-      </div>
-    </div>
-
-    <!-- Tab 6: Vorkommnisse -->
-    <div id="tab-vork" class="tab-pane">
-      <div class="sub-toolbar">
-        <button class="warn" onclick="openNewVorkommnis()">+ Vorkommnis hinzufügen</button>
-        <button class="del"  onclick="deleteVorkommnis()">Löschen</button>
-      </div>
-      <div class="table-scroll">
-        <table class="dt">
-          <thead>
-            <tr>
-              <th style="width:36px">ID</th>
-              <th style="width:95px">Datum</th>
-              <th>Art der Störung</th>
-              <th style="width:120px">Meldung Behörde</th>
-              <th style="width:130px">Meldung Hersteller</th>
-            </tr>
-          </thead>
-          <tbody id="vork-tbody"></tbody>
-        </table>
-        <div id="vork-cards" class="mobile-cards"></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ── Statusbar ───────────────────────────────────────────────────────────── -->
-<div id="statusbar">Bereit</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════════════
+    <!-- ═══════════════════════════════════════════════════════════════════════════
      DIALOGE
      ═════════════════════════════════════════════════════════════════════════ -->
 
-<!-- Dialog: Gerät erfassen / bearbeiten -->
-<dialog id="dlg-geraet" style="width:640px">
-  <div class="dlg-hd" id="dlg-geraet-title">Gerät erfassen</div>
-  <div class="dlg-body">
-
-    <div class="form-sec">Gerätekennzeichnung (§14 MPBetreibV)</div>
-    <div class="form-row"><label>Bezeichnung *</label>
-      <input type="text" id="f_bezeichnung"></div>
-    <div class="form-row"><label>Art / Typ</label>
-      <input type="text" id="f_art_typ"></div>
-    <div class="form-row"><label>Seriennummer</label>
-      <input type="text" id="f_seriennummer"></div>
-    <div class="form-row"><label>Loscode</label>
-      <input type="text" id="f_loscode"></div>
-    <div class="form-row"><label>Anschaffungsjahr</label>
-      <input type="text" id="f_anschaffungsjahr" placeholder="z.B. 2023"></div>
-    <div class="form-row"><label>Inbetriebnahmedatum</label>
-      <input type="date" id="f_inbetriebnahmedatum"></div>
-    <div class="form-row"><label>Außerdienststellung</label>
-      <input type="date" id="f_ausserdienst_datum"></div>
-
-    <div class="form-sec">Hersteller</div>
-    <div class="form-row">
-      <label>Aus Stammdaten wählen</label>
-      <select id="f_hersteller_id" onchange="onHerstellerSelect()">
-        <option value="">— Kein / manuell eingeben —</option>
-      </select>
-    </div>
-    <div class="sel-hint" id="hst-hint">Felder wurden aus den Stammdaten befüllt — bei Bedarf anpassbar.</div>
-    <div class="form-row"><label>Herstellername</label>
-      <input type="text" id="f_hersteller_name"></div>
-    <div class="form-row"><label>Anschrift</label>
-      <input type="text" id="f_hersteller_anschrift" placeholder="Straße, PLZ Ort"></div>
-    <div class="form-row"><label>Tel</label>
-      <input type="text" id="f_hersteller_tel"></div>
-    <div class="form-row"><label>E-Mail</label>
-      <input type="text" id="f_hersteller_email"></div>
-    <div class="form-row"><label>CE Kennzeichnung</label>
-      <input type="text" id="f_ce_jahr" placeholder="z.B. 2021"></div>
-
-    <div class="form-sec">Klassifikation &amp; UDI</div>
-    <div class="form-row"><label>Risikoklasse</label>
-      <select id="f_risikoklasse">
-        <option value=""></option>
-        <option>I</option><option>IIa</option><option>IIb</option><option>III</option>
-        <option>IVD-A</option><option>IVD-B</option><option>IVD-C</option><option>IVD-D</option>
-      </select></div>
-    <div class="form-row"><label>UDI-DI</label>
-      <input type="text" id="f_udi_di"></div>
-    <div class="form-row"><label>UDI-PI</label>
-      <input type="text" id="f_udi_pi"></div>
-    <div class="form-row"><label>EMDN-Code</label>
-      <input type="text" id="f_emdn_code"></div>
-    <div class="form-row"><label>Aktives Gerät</label>
-      <input type="checkbox" id="f_aktives_geraet"></div>
-    <div class="form-row"><label>Implantierbar</label>
-      <input type="checkbox" id="f_implantierbar"></div>
-    <div class="form-row"><label>Einmalprodukt</label>
-      <input type="checkbox" id="f_einmalprodukt"></div>
-    <div class="form-row"><label>Steril</label>
-      <input type="checkbox" id="f_steril"></div>
-    <div class="form-row"><label>Zweckbestimmung</label>
-      <textarea id="f_zweckbestimmung" rows="3"></textarea></div>
-
-    <div class="form-sec">Betreiber / Standort</div>
-    <div class="form-row">
-      <label>Aus Stammdaten wählen</label>
-      <select id="f_betreiber_id" onchange="onBetreiberSelect()">
-        <option value="">— Kein / manuell eingeben —</option>
-      </select>
-    </div>
-    <div class="sel-hint" id="btr-hint">Felder wurden aus den Stammdaten befüllt — bei Bedarf anpassbar.</div>
-    <div class="form-row"><label>Betreiber / Institution</label>
-      <input type="text" id="f_betreiber"></div>
-    <div class="form-row"><label>Adresse</label>
-      <input type="text" id="f_betreiber_anschrift" placeholder="Straße, PLZ Ort"></div>
-    <div class="form-row"><label>Tel</label>
-      <input type="text" id="f_betreiber_tel"></div>
-    <div class="form-row"><label>E-Mail</label>
-      <input type="text" id="f_betreiber_email"></div>
-    <div class="form-row"><label>Inventarnummer</label>
-      <input type="text" id="f_inventarnummer"></div>
-    <div class="form-row"><label>Verantwortliche Person</label>
-      <input type="text" id="f_verantwortliche_person"></div>
-
-    <div class="form-sec">IT-Sicherheit (§14 Abs. 3 MPBetreibV)</div>
-    <div class="form-row"><label>Netzwerkanbindung</label>
-      <input type="checkbox" id="f_netzwerkanbindung"></div>
-    <div class="form-row"><label>Softwareversion</label>
-      <input type="text" id="f_softwareversion"></div>
-
-    <div class="form-sec">Sonstiges</div>
-    <div class="form-row"><label>Bemerkungen</label>
-      <textarea id="f_bemerkungen" rows="3"></textarea></div>
-
-  </div>
-  <div class="dlg-ft">
-    <button class="save"   onclick="saveGeraet()">Speichern</button>
-    <button class="cancel" onclick="document.getElementById('dlg-geraet').close()">Abbrechen</button>
-  </div>
-</dialog>
-
-<!-- Dialog: Hersteller-Stammdaten -->
-<dialog id="dlg-hersteller-mgmt" style="width:720px">
-  <div class="dlg-hd">Hersteller-Stammdaten</div>
-  <div class="dlg-body" style="padding:0">
-    <div class="mgmt-wrap">
-      <div class="mgmt-list">
-        <div class="mgmt-toolbar">
-          <button style="background:var(--c-add)" onclick="hstNeu()">+ Neu</button>
-          <button style="background:var(--c-del)" onclick="hstDelete()">Löschen</button>
+    <!-- Dialog: Gerät erfassen / bearbeiten -->
+    <dialog id="dlg-geraet" style="width: 640px">
+      <div class="dlg-hd" id="dlg-geraet-title">Gerät erfassen</div>
+      <div class="dlg-body">
+        <div class="form-sec">Gerätekennzeichnung (§14 MPBetreibV)</div>
+        <div class="form-row">
+          <label>Bezeichnung *</label> <input type="text" id="f_bezeichnung" />
         </div>
-        <div class="mgmt-list-scroll">
-          <table class="dt">
-            <thead><tr><th style="width:36px">ID</th><th>Name</th></tr></thead>
-            <tbody id="hst-tbody"></tbody>
-          </table>
+        <div class="form-row">
+          <label>Art / Typ</label> <input type="text" id="f_art_typ" />
         </div>
-      </div>
-      <div class="mgmt-form">
-        <div class="form-sec" id="hst-form-title" style="margin-top:8px">Neuer Hersteller</div>
-        <div class="form-row"><label>Name *</label>
-          <input type="text" id="hst_name"></div>
-        <div class="form-row"><label>Anschrift</label>
-          <input type="text" id="hst_anschrift" placeholder="Straße, PLZ Ort"></div>
-        <div class="form-row"><label>Tel</label>
-          <input type="text" id="hst_tel"></div>
-        <div class="form-row"><label>E-Mail</label>
-          <input type="text" id="hst_email"></div>
-        <div class="form-row"><label>Bemerkungen</label>
-          <textarea id="hst_bemerkungen" rows="2"></textarea></div>
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button onclick="hstSave()" style="background:var(--c-add);color:#fff;border:none;padding:6px 18px;cursor:pointer;font-size:12px">Speichern</button>
-          <button onclick="hstNeu()"  style="background:#bbb;color:#fff;border:none;padding:6px 18px;cursor:pointer;font-size:12px">Neu / Abbrechen</button>
+        <div class="form-row">
+          <label>Seriennummer</label> <input type="text" id="f_seriennummer" />
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="dlg-ft">
-    <button class="cancel" onclick="closeHerstellerMgmt()">Schließen</button>
-  </div>
-</dialog>
+        <div class="form-row">
+          <label>Loscode</label> <input type="text" id="f_loscode" />
+        </div>
+        <div class="form-row">
+          <label>Anschaffungsjahr</label>
+          <input type="text" id="f_anschaffungsjahr" placeholder="z.B. 2023" />
+        </div>
+        <div class="form-row">
+          <label>Inbetriebnahmedatum</label>
+          <input type="date" id="f_inbetriebnahmedatum" />
+        </div>
+        <div class="form-row">
+          <label>Außerdienststellung</label>
+          <input type="date" id="f_ausserdienst_datum" />
+        </div>
 
-<!-- Dialog: Betreiber-Stammdaten -->
-<dialog id="dlg-betreiber-mgmt" style="width:720px">
-  <div class="dlg-hd">Betreiber-Stammdaten</div>
-  <div class="dlg-body" style="padding:0">
-    <div class="mgmt-wrap">
-      <div class="mgmt-list">
-        <div class="mgmt-toolbar">
-          <button style="background:var(--c-add)" onclick="btrNeu()">+ Neu</button>
-          <button style="background:var(--c-del)" onclick="btrDelete()">Löschen</button>
+        <div class="form-sec">Hersteller</div>
+        <div class="form-row">
+          <label>Aus Stammdaten wählen</label>
+          <select id="f_hersteller_id" onchange="onHerstellerSelect()">
+            <option value="">— Kein / manuell eingeben —</option>
+          </select>
         </div>
-        <div class="mgmt-list-scroll">
-          <table class="dt">
-            <thead><tr><th style="width:36px">ID</th><th>Name / Institution</th></tr></thead>
-            <tbody id="btr-tbody"></tbody>
-          </table>
+        <div class="sel-hint" id="hst-hint">
+          Felder wurden aus den Stammdaten befüllt — bei Bedarf anpassbar.
         </div>
-      </div>
-      <div class="mgmt-form">
-        <div class="form-sec" id="btr-form-title" style="margin-top:8px">Neuer Betreiber</div>
-        <div class="form-row"><label>Name / Institution *</label>
-          <input type="text" id="btr_name"></div>
-        <div class="form-row"><label>Anschrift</label>
-          <input type="text" id="btr_anschrift" placeholder="Straße, PLZ Ort"></div>
-        <div class="form-row"><label>Tel</label>
-          <input type="text" id="btr_tel"></div>
-        <div class="form-row"><label>E-Mail</label>
-          <input type="text" id="btr_email"></div>
-        <div class="form-row"><label>Bemerkungen</label>
-          <textarea id="btr_bemerkungen" rows="2"></textarea></div>
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button onclick="btrSave()" style="background:var(--c-add);color:#fff;border:none;padding:6px 18px;cursor:pointer;font-size:12px">Speichern</button>
-          <button onclick="btrNeu()"  style="background:#bbb;color:#fff;border:none;padding:6px 18px;cursor:pointer;font-size:12px">Neu / Abbrechen</button>
+        <div class="form-row">
+          <label>Herstellername</label>
+          <input type="text" id="f_hersteller_name" />
+        </div>
+        <div class="form-row">
+          <label>Anschrift</label>
+          <input
+            type="text"
+            id="f_hersteller_anschrift"
+            placeholder="Straße, PLZ Ort"
+          />
+        </div>
+        <div class="form-row">
+          <label>Tel</label> <input type="text" id="f_hersteller_tel" />
+        </div>
+        <div class="form-row">
+          <label>E-Mail</label> <input type="text" id="f_hersteller_email" />
+        </div>
+        <div class="form-row">
+          <label>CE Kennzeichnung</label>
+          <input type="text" id="f_ce_jahr" placeholder="z.B. 2021" />
+        </div>
+
+        <div class="form-sec">Klassifikation &amp; UDI</div>
+        <div class="form-row">
+          <label>Risikoklasse</label>
+          <select id="f_risikoklasse">
+            <option value=""></option>
+            <option>I</option>
+            <option>IIa</option>
+            <option>IIb</option>
+            <option>III</option>
+            <option>IVD-A</option>
+            <option>IVD-B</option>
+            <option>IVD-C</option>
+            <option>IVD-D</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>UDI-DI</label> <input type="text" id="f_udi_di" />
+        </div>
+        <div class="form-row">
+          <label>UDI-PI</label> <input type="text" id="f_udi_pi" />
+        </div>
+        <div class="form-row">
+          <label>EMDN-Code</label> <input type="text" id="f_emdn_code" />
+        </div>
+        <div class="form-row">
+          <label>Aktives Gerät</label>
+          <input type="checkbox" id="f_aktives_geraet" />
+        </div>
+        <div class="form-row">
+          <label>Implantierbar</label>
+          <input type="checkbox" id="f_implantierbar" />
+        </div>
+        <div class="form-row">
+          <label>Einmalprodukt</label>
+          <input type="checkbox" id="f_einmalprodukt" />
+        </div>
+        <div class="form-row">
+          <label>Steril</label> <input type="checkbox" id="f_steril" />
+        </div>
+        <div class="form-row">
+          <label>Zweckbestimmung</label>
+          <textarea id="f_zweckbestimmung" rows="3"></textarea>
+        </div>
+
+        <div class="form-sec">Betreiber / Standort</div>
+        <div class="form-row">
+          <label>Aus Stammdaten wählen</label>
+          <select id="f_betreiber_id" onchange="onBetreiberSelect()">
+            <option value="">— Kein / manuell eingeben —</option>
+          </select>
+        </div>
+        <div class="sel-hint" id="btr-hint">
+          Felder wurden aus den Stammdaten befüllt — bei Bedarf anpassbar.
+        </div>
+        <div class="form-row">
+          <label>Betreiber / Institution</label>
+          <input type="text" id="f_betreiber" />
+        </div>
+        <div class="form-row">
+          <label>Adresse</label>
+          <input
+            type="text"
+            id="f_betreiber_anschrift"
+            placeholder="Straße, PLZ Ort"
+          />
+        </div>
+        <div class="form-row">
+          <label>Tel</label> <input type="text" id="f_betreiber_tel" />
+        </div>
+        <div class="form-row">
+          <label>E-Mail</label> <input type="text" id="f_betreiber_email" />
+        </div>
+        <div class="form-row">
+          <label>Inventarnummer</label>
+          <input type="text" id="f_inventarnummer" />
+        </div>
+        <div class="form-row">
+          <label>Verantwortliche Person</label>
+          <input type="text" id="f_verantwortliche_person" />
+        </div>
+
+        <div class="form-sec">IT-Sicherheit (§14 Abs. 3 MPBetreibV)</div>
+        <div class="form-row">
+          <label>Netzwerkanbindung</label>
+          <input type="checkbox" id="f_netzwerkanbindung" />
+        </div>
+        <div class="form-row">
+          <label>Softwareversion</label>
+          <input type="text" id="f_softwareversion" />
+        </div>
+
+        <div class="form-sec">Sonstiges</div>
+        <div class="form-row">
+          <label>Bemerkungen</label>
+          <textarea id="f_bemerkungen" rows="3"></textarea>
         </div>
       </div>
-    </div>
-  </div>
-  <div class="dlg-ft">
-    <button class="cancel" onclick="closeBetreiberMgmt()">Schließen</button>
-  </div>
-</dialog>
+      <div class="dlg-ft">
+        <button class="save" onclick="saveGeraet()">Speichern</button>
+        <button
+          class="cancel"
+          onclick="document.getElementById('dlg-geraet').close()"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </dialog>
 
-<!-- Dialog: Übergabe -->
-<dialog id="dlg-ueberg" style="width:520px">
-  <div class="dlg-hd">Übergabe erfassen</div>
-  <div class="dlg-body">
-    <div class="form-row"><label>Datum *</label>
-      <input type="date" id="ue_datum"></div>
-    <div class="form-row"><label>Prüfer</label>
-      <input type="text" id="ue_pruefer"></div>
-    <div class="form-row"><label>Empfänger</label>
-      <input type="text" id="ue_empfaenger"></div>
-    <div class="form-row"><label>Funktionsprüfung</label>
-      <select id="ue_funktionspruefung">
-        <option>Nicht geprüft</option>
-        <option>Bestanden</option>
-        <option>Nicht bestanden</option>
-      </select></div>
-    <div class="form-row"><label>Protokoll (Datei)</label>
-      <input type="file" id="ue_datei"></div>
-    <div class="form-row"><label>Bemerkungen</label>
-      <textarea id="ue_bemerkungen" rows="2"></textarea></div>
-  </div>
-  <div class="dlg-ft">
-    <button class="save"   onclick="saveUebergabe()">Speichern</button>
-    <button class="cancel" onclick="document.getElementById('dlg-ueberg').close()">Abbrechen</button>
-  </div>
-</dialog>
+    <!-- Dialog: Hersteller-Stammdaten -->
+    <dialog id="dlg-hersteller-mgmt" style="width: 720px">
+      <div class="dlg-hd">Hersteller-Stammdaten</div>
+      <div class="dlg-body" style="padding: 0">
+        <div class="mgmt-wrap">
+          <div class="mgmt-list">
+            <div class="mgmt-toolbar">
+              <button style="background: var(--c-add)" onclick="hstNeu()">
+                + Neu
+              </button>
+              <button style="background: var(--c-del)" onclick="hstDelete()">
+                Löschen
+              </button>
+            </div>
+            <div class="mgmt-list-scroll">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">ID</th>
+                    <th>Name</th>
+                  </tr>
+                </thead>
+                <tbody id="hst-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="mgmt-form">
+            <div class="form-sec" id="hst-form-title" style="margin-top: 8px">
+              Neuer Hersteller
+            </div>
+            <div class="form-row">
+              <label>Name *</label> <input type="text" id="hst_name" />
+            </div>
+            <div class="form-row">
+              <label>Anschrift</label>
+              <input
+                type="text"
+                id="hst_anschrift"
+                placeholder="Straße, PLZ Ort"
+              />
+            </div>
+            <div class="form-row">
+              <label>Tel</label> <input type="text" id="hst_tel" />
+            </div>
+            <div class="form-row">
+              <label>E-Mail</label> <input type="text" id="hst_email" />
+            </div>
+            <div class="form-row">
+              <label>Bemerkungen</label>
+              <textarea id="hst_bemerkungen" rows="2"></textarea>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 8px">
+              <button
+                onclick="hstSave()"
+                style="
+                  background: var(--c-add);
+                  color: #fff;
+                  border: none;
+                  padding: 6px 18px;
+                  cursor: pointer;
+                  font-size: 12px;
+                "
+              >
+                Speichern
+              </button>
+              <button
+                onclick="hstNeu()"
+                style="
+                  background: #bbb;
+                  color: #fff;
+                  border: none;
+                  padding: 6px 18px;
+                  cursor: pointer;
+                  font-size: 12px;
+                "
+              >
+                Neu / Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button class="cancel" onclick="closeHerstellerMgmt()">
+          Schließen
+        </button>
+      </div>
+    </dialog>
 
-<!-- Dialog: Prüfung / Wartung -->
-<dialog id="dlg-pruef" style="width:540px">
-  <div class="dlg-hd">Prüfung / Wartung erfassen</div>
-  <div class="dlg-body">
-    <div class="form-row"><label>Art *</label>
-      <select id="p_art">
-        <option value=""></option>
-        <option>STK</option><option>MTK</option><option>Wartung</option>
-        <option>Reparatur</option><option>IT-Sicherheitsprüfung</option><option>Kalibrierung</option>
-      </select></div>
-    <div class="form-row"><label>Datum *</label>
-      <input type="date" id="p_datum"></div>
-    <div class="form-row"><label>Nächste Fälligkeit</label>
-      <input type="date" id="p_naechste_faelligkeit"></div>
-    <div class="form-row"><label>Prüfer / Firma</label>
-      <input type="text" id="p_pruefer"></div>
-    <div class="form-row"><label>Ergebnis</label>
-      <select id="p_ergebnis">
-        <option value=""></option>
-        <option>Bestanden</option><option>Bedingt bestanden</option><option>Nicht bestanden</option>
-      </select></div>
-    <div class="form-row"><label>Messwerte</label>
-      <input type="text" id="p_messwerte" placeholder="z.B. Ableitstrom 42 µA"></div>
-    <div class="form-row"><label>Messverfahren / Norm</label>
-      <input type="text" id="p_messverfahren" placeholder="z.B. IEC 62353"></div>
-    <div class="form-row"><label>Aufgedeckte Mängel</label>
-      <textarea id="p_maengel" rows="2"></textarea></div>
-    <div class="form-row"><label>Korrektivmaßnahmen</label>
-      <textarea id="p_korrektivmassnahmen" rows="2"></textarea></div>
-    <div class="form-row"><label>Bemerkungen</label>
-      <textarea id="p_bemerkungen" rows="2"></textarea></div>
-  </div>
-  <div class="dlg-ft">
-    <button class="save"   onclick="savePruefung()">Speichern</button>
-    <button class="cancel" onclick="document.getElementById('dlg-pruef').close()">Abbrechen</button>
-  </div>
-</dialog>
+    <!-- Dialog: Betreiber-Stammdaten -->
+    <dialog id="dlg-betreiber-mgmt" style="width: 720px">
+      <div class="dlg-hd">Betreiber-Stammdaten</div>
+      <div class="dlg-body" style="padding: 0">
+        <div class="mgmt-wrap">
+          <div class="mgmt-list">
+            <div class="mgmt-toolbar">
+              <button style="background: var(--c-add)" onclick="btrNeu()">
+                + Neu
+              </button>
+              <button style="background: var(--c-del)" onclick="btrDelete()">
+                Löschen
+              </button>
+            </div>
+            <div class="mgmt-list-scroll">
+              <table class="dt">
+                <thead>
+                  <tr>
+                    <th style="width: 36px">ID</th>
+                    <th>Name / Institution</th>
+                  </tr>
+                </thead>
+                <tbody id="btr-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="mgmt-form">
+            <div class="form-sec" id="btr-form-title" style="margin-top: 8px">
+              Neuer Betreiber
+            </div>
+            <div class="form-row">
+              <label>Name / Institution *</label>
+              <input type="text" id="btr_name" />
+            </div>
+            <div class="form-row">
+              <label>Anschrift</label>
+              <input
+                type="text"
+                id="btr_anschrift"
+                placeholder="Straße, PLZ Ort"
+              />
+            </div>
+            <div class="form-row">
+              <label>Tel</label> <input type="text" id="btr_tel" />
+            </div>
+            <div class="form-row">
+              <label>E-Mail</label> <input type="text" id="btr_email" />
+            </div>
+            <div class="form-row">
+              <label>Bemerkungen</label>
+              <textarea id="btr_bemerkungen" rows="2"></textarea>
+            </div>
+            <div style="margin-top: 10px; display: flex; gap: 8px">
+              <button
+                onclick="btrSave()"
+                style="
+                  background: var(--c-add);
+                  color: #fff;
+                  border: none;
+                  padding: 6px 18px;
+                  cursor: pointer;
+                  font-size: 12px;
+                "
+              >
+                Speichern
+              </button>
+              <button
+                onclick="btrNeu()"
+                style="
+                  background: #bbb;
+                  color: #fff;
+                  border: none;
+                  padding: 6px 18px;
+                  cursor: pointer;
+                  font-size: 12px;
+                "
+              >
+                Neu / Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button class="cancel" onclick="closeBetreiberMgmt()">Schließen</button>
+      </div>
+    </dialog>
 
-<!-- Dialog: Einweisung (§13 MPBetreibV) -->
-<dialog id="dlg-einw" style="width:500px">
-  <div class="dlg-hd">Einweisung erfassen (§13 MPBetreibV)</div>
-  <div class="dlg-body">
-    <div class="form-row"><label>Datum *</label>
-      <input type="date" id="e_datum"></div>
-    <div class="form-row"><label>Eingewiesene Person</label>
-      <input type="text" id="e_eingewiesene_person"></div>
-    <div class="form-row"><label>Beauftragte Person</label>
-      <input type="text" id="e_beauftragte_person"></div>
-    <div class="form-row"><label>Funktionsprüfung durchgeführt</label>
-      <input type="checkbox" id="e_funktionspruefung"></div>
-    <div class="form-row"><label>Bemerkungen</label>
-      <textarea id="e_bemerkungen" rows="3"></textarea></div>
-  </div>
-  <div class="dlg-ft">
-    <button class="save"   onclick="saveEinweisung()">Speichern</button>
-    <button class="cancel" onclick="document.getElementById('dlg-einw').close()">Abbrechen</button>
-  </div>
-</dialog>
+    <!-- Dialog: Übergabe -->
+    <dialog id="dlg-ueberg" style="width: 520px">
+      <div class="dlg-hd">Übergabe erfassen</div>
+      <div class="dlg-body">
+        <div class="form-row">
+          <label>Datum *</label> <input type="date" id="ue_datum" />
+        </div>
+        <div class="form-row">
+          <label>Prüfer</label> <input type="text" id="ue_pruefer" />
+        </div>
+        <div class="form-row">
+          <label>Empfänger</label> <input type="text" id="ue_empfaenger" />
+        </div>
+        <div class="form-row">
+          <label>Funktionsprüfung</label>
+          <select id="ue_funktionspruefung">
+            <option>Nicht geprüft</option>
+            <option>Bestanden</option>
+            <option>Nicht bestanden</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Protokoll (Datei)</label> <input type="file" id="ue_datei" />
+        </div>
+        <div class="form-row">
+          <label>Bemerkungen</label>
+          <textarea id="ue_bemerkungen" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button class="save" onclick="saveUebergabe()">Speichern</button>
+        <button
+          class="cancel"
+          onclick="document.getElementById('dlg-ueberg').close()"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </dialog>
 
-<!-- Dialog: Vorkommnis / Störung -->
-<dialog id="dlg-vork" style="width:540px">
-  <div class="dlg-hd">Vorkommnis / Störung erfassen (§3 MPDG / Art. 87 MDR)</div>
-  <div class="dlg-body">
-    <div class="form-row"><label>Datum *</label>
-      <input type="date" id="v_datum"></div>
-    <div class="form-row"><label>Art der Störung</label>
-      <input type="text" id="v_art_stoerung"></div>
-    <div class="form-row"><label>Folgen / Konsequenzen</label>
-      <textarea id="v_folgen" rows="2"></textarea></div>
-    <div class="form-row"><label>Meldung an Behörde (Datum)</label>
-      <input type="date" id="v_meldung_behoerde"></div>
-    <div class="form-row"><label>Meldung an Hersteller (Datum)</label>
-      <input type="date" id="v_meldung_hersteller"></div>
-    <div class="form-row"><label>Korrektivmaßnahmen</label>
-      <textarea id="v_korrektivmassnahmen" rows="2"></textarea></div>
-    <div class="form-row"><label>Bemerkungen</label>
-      <textarea id="v_bemerkungen" rows="2"></textarea></div>
-  </div>
-  <div class="dlg-ft">
-    <button class="savew"  onclick="saveVorkommnis()">Speichern</button>
-    <button class="cancel" onclick="document.getElementById('dlg-vork').close()">Abbrechen</button>
-  </div>
-</dialog>
+    <!-- Dialog: Prüfung / Wartung -->
+    <dialog id="dlg-pruef" style="width: 540px">
+      <div class="dlg-hd">Prüfung / Wartung erfassen</div>
+      <div class="dlg-body">
+        <div class="form-row">
+          <label>Art *</label>
+          <select id="p_art">
+            <option value=""></option>
+            <option>STK</option>
+            <option>MTK</option>
+            <option>Wartung</option>
+            <option>Reparatur</option>
+            <option>IT-Sicherheitsprüfung</option>
+            <option>Kalibrierung</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Datum *</label> <input type="date" id="p_datum" />
+        </div>
+        <div class="form-row">
+          <label>Nächste Fälligkeit</label>
+          <input type="date" id="p_naechste_faelligkeit" />
+        </div>
+        <div class="form-row">
+          <label>Prüfer / Firma</label> <input type="text" id="p_pruefer" />
+        </div>
+        <div class="form-row">
+          <label>Ergebnis</label>
+          <select id="p_ergebnis">
+            <option value=""></option>
+            <option>Bestanden</option>
+            <option>Bedingt bestanden</option>
+            <option>Nicht bestanden</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Messwerte</label>
+          <input
+            type="text"
+            id="p_messwerte"
+            placeholder="z.B. Ableitstrom 42 µA"
+          />
+        </div>
+        <div class="form-row">
+          <label>Messverfahren / Norm</label>
+          <input
+            type="text"
+            id="p_messverfahren"
+            placeholder="z.B. IEC 62353"
+          />
+        </div>
+        <div class="form-row">
+          <label>Aufgedeckte Mängel</label>
+          <textarea id="p_maengel" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Korrektivmaßnahmen</label>
+          <textarea id="p_korrektivmassnahmen" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Bemerkungen</label>
+          <textarea id="p_bemerkungen" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button class="save" onclick="savePruefung()">Speichern</button>
+        <button
+          class="cancel"
+          onclick="document.getElementById('dlg-pruef').close()"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </dialog>
 
-<!-- Versteckter File-Input für PDF-Upload -->
-<input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileSelected(event)">
+    <!-- Dialog: Einweisung (§13 MPBetreibV) -->
+    <dialog id="dlg-einw" style="width: 500px">
+      <div class="dlg-hd">Einweisung erfassen (§13 MPBetreibV)</div>
+      <div class="dlg-body">
+        <div class="form-row">
+          <label>Datum *</label> <input type="date" id="e_datum" />
+        </div>
+        <div class="form-row">
+          <label>Eingewiesene Person</label>
+          <input type="text" id="e_eingewiesene_person" />
+        </div>
+        <div class="form-row">
+          <label>Beauftragte Person</label>
+          <input type="text" id="e_beauftragte_person" />
+        </div>
+        <div class="form-row">
+          <label>Funktionsprüfung durchgeführt</label>
+          <input type="checkbox" id="e_funktionspruefung" />
+        </div>
+        <div class="form-row">
+          <label>Bemerkungen</label>
+          <textarea id="e_bemerkungen" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button class="save" onclick="saveEinweisung()">Speichern</button>
+        <button
+          class="cancel"
+          onclick="document.getElementById('dlg-einw').close()"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </dialog>
 
-<!-- ── JavaScript ─────────────────────────────────────────────────────────── -->
-<script>
-'use strict';
+    <!-- Dialog: Vorkommnis / Störung -->
+    <dialog id="dlg-vork" style="width: 540px">
+      <div class="dlg-hd">
+        Vorkommnis / Störung erfassen (§3 MPDG / Art. 87 MDR)
+      </div>
+      <div class="dlg-body">
+        <div class="form-row">
+          <label>Datum *</label> <input type="date" id="v_datum" />
+        </div>
+        <div class="form-row">
+          <label>Art der Störung</label>
+          <input type="text" id="v_art_stoerung" />
+        </div>
+        <div class="form-row">
+          <label>Folgen / Konsequenzen</label>
+          <textarea id="v_folgen" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Meldung an Behörde (Datum)</label>
+          <input type="date" id="v_meldung_behoerde" />
+        </div>
+        <div class="form-row">
+          <label>Meldung an Hersteller (Datum)</label>
+          <input type="date" id="v_meldung_hersteller" />
+        </div>
+        <div class="form-row">
+          <label>Korrektivmaßnahmen</label>
+          <textarea id="v_korrektivmassnahmen" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <label>Bemerkungen</label>
+          <textarea id="v_bemerkungen" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="dlg-ft">
+        <button class="savew" onclick="saveVorkommnis()">Speichern</button>
+        <button
+          class="cancel"
+          onclick="document.getElementById('dlg-vork').close()"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </dialog>
 
-// ── State ────────────────────────────────────────────────────────────────────
-let currentGeraetId = null;
-let currentPruefId  = null;
-let currentEinwId   = null;
-let currentUebergId = null;
-let currentDokId    = null;
-let currentVorkId   = null;
-let editMode        = false;
-let hstCache = [];
-let btrCache = [];
-let currentHstId = null;
-let currentBtrId = null;
+    <!-- Versteckter File-Input für PDF-Upload -->
+    <input
+      type="file"
+      id="file-input"
+      accept=".pdf"
+      style="display: none"
+      onchange="handleFileSelected(event)"
+    />
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function setStatus(msg) { document.getElementById('statusbar').textContent = msg; }
-async function api(method, path, body) {
-  const opts = { method, headers: {} };
-  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-  return fetch(path, opts);
-}
-function val(id)  { return document.getElementById(id)?.value?.trim() || null; }
-function chk(id)  { return document.getElementById(id)?.checked ? 1 : 0; }
-function setVal(id, v) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (el.type === 'checkbox') el.checked = !!v;
-  else el.value = v ?? '';
-}
+    <!-- ── JavaScript ─────────────────────────────────────────────────────────── -->
+    <script>
+      "use strict";
 
-// ── Mobile helpers ────────────────────────────────────────────────────────────
-function isMobile() { return window.matchMedia('(max-width: 768px)').matches; }
+      // ── State ────────────────────────────────────────────────────────────────────
+      let currentGeraetId = null;
+      let currentPruefId = null;
+      let currentEinwId = null;
+      let currentUebergId = null;
+      let currentDokId = null;
+      let currentVorkId = null;
+      let editMode = false;
+      let hstCache = [];
+      let btrCache = [];
+      let currentHstId = null;
+      let currentBtrId = null;
 
-function goBackToList() {
-  document.body.classList.remove('mobile-detail-active');
-  document.getElementById('btn-zurueck').style.display = 'none';
-  document.getElementById('btn-neu').style.display = '';
-}
+      // ── Helpers ───────────────────────────────────────────────────────────────────
+      function esc(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+      function setStatus(msg) {
+        document.getElementById("statusbar").textContent = msg;
+      }
+      async function api(method, path, body) {
+        const opts = { method, headers: {} };
+        if (body) {
+          opts.headers["Content-Type"] = "application/json";
+          opts.body = JSON.stringify(body);
+        }
+        return fetch(path, opts);
+      }
+      function val(id) {
+        return document.getElementById(id)?.value?.trim() || null;
+      }
+      function chk(id) {
+        return document.getElementById(id)?.checked ? 1 : 0;
+      }
+      function setVal(id, v) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === "checkbox") el.checked = !!v;
+        else el.value = v ?? "";
+      }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-function showTab(name) {
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  const map = { detail: 0, einw: 1, ueberg: 2, pruef: 3, dok: 4, vork: 5 };
-  document.querySelectorAll('.tab-btn')[map[name]]?.classList.add('active');
-}
+      // ── Mobile helpers ────────────────────────────────────────────────────────────
+      function isMobile() {
+        return window.matchMedia("(max-width: 768px)").matches;
+      }
 
-// ── Geräteliste laden ─────────────────────────────────────────────────────────
-async function loadGeraete() {
-  const q = document.getElementById('search-input').value.trim();
-  const url = '/api/geraete' + (q ? `?search=${encodeURIComponent(q)}` : '');
-  const data = await (await api('GET', url)).json();
-  const tbody  = document.getElementById('geraete-tbody');
-  const gcards = document.getElementById('geraete-cards');
-  tbody.innerHTML  = '';
-  gcards.innerHTML = '';
-  for (const g of data) {
-    const tr = document.createElement('tr');
-    if (g.id === currentGeraetId) tr.classList.add('sel');
-    tr.innerHTML = `<td>${g.id}</td><td>${esc(g.bezeichnung)}</td><td>${esc(g.art_typ)}</td><td style="text-align:center">${esc(g.risikoklasse)}</td><td>${esc(g.betreiber)}</td>`;
-    tr.addEventListener('click', () => selectGeraet(g.id, tr));
-    tbody.appendChild(tr);
+      function goBackToList() {
+        document.body.classList.remove("mobile-detail-active");
+        document.getElementById("btn-zurueck").style.display = "none";
+        document.getElementById("btn-neu").style.display = "";
+      }
 
-    const card = document.createElement('div');
-    card.className = 'mobile-card' + (g.id === currentGeraetId ? ' sel' : '');
-    card.dataset.id = g.id;
-    card.innerHTML = `
+      // ── Tabs ──────────────────────────────────────────────────────────────────────
+      function showTab(name) {
+        document
+          .querySelectorAll(".tab-pane")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("tab-" + name).classList.add("active");
+        const map = {
+          detail: 0,
+          einw: 1,
+          ueberg: 2,
+          pruef: 3,
+          dok: 4,
+          vork: 5,
+        };
+        document
+          .querySelectorAll(".tab-btn")
+          [map[name]]?.classList.add("active");
+      }
+
+      // ── Geräteliste laden ─────────────────────────────────────────────────────────
+      async function loadGeraete() {
+        const q = document.getElementById("search-input").value.trim();
+        const url =
+          "/api/geraete" + (q ? `?search=${encodeURIComponent(q)}` : "");
+        const data = await (await api("GET", url)).json();
+        const tbody = document.getElementById("geraete-tbody");
+        const gcards = document.getElementById("geraete-cards");
+        tbody.innerHTML = "";
+        gcards.innerHTML = "";
+        for (const g of data) {
+          const tr = document.createElement("tr");
+          if (g.id === currentGeraetId) tr.classList.add("sel");
+          tr.innerHTML = `<td>${g.id}</td><td>${esc(g.bezeichnung)}</td><td>${esc(g.art_typ)}</td><td style="text-align:center">${esc(g.risikoklasse)}</td><td>${esc(g.betreiber)}</td>`;
+          tr.addEventListener("click", () => selectGeraet(g.id, tr));
+          tbody.appendChild(tr);
+
+          const card = document.createElement("div");
+          card.className =
+            "mobile-card" + (g.id === currentGeraetId ? " sel" : "");
+          card.dataset.id = g.id;
+          card.innerHTML = `
       <div class="mc-title">${esc(g.bezeichnung)}</div>
       <div class="mc-row">
-        ${g.art_typ      ? `<span class="mc-detail">${esc(g.art_typ)}</span>`          : ''}
-        ${g.risikoklasse ? `<span class="mc-date">Klasse ${esc(g.risikoklasse)}</span>` : ''}
+        ${g.art_typ ? `<span class="mc-detail">${esc(g.art_typ)}</span>` : ""}
+        ${g.risikoklasse ? `<span class="mc-date">Klasse ${esc(g.risikoklasse)}</span>` : ""}
       </div>
-      ${g.standort_raum ? `<div class="mc-detail">📍 ${esc(g.standort_raum)}</div>` : ''}`;
-    card.addEventListener('click', () => selectGeraet(g.id, null));
-    gcards.appendChild(card);
-  }
-  setStatus(`${data.length} Gerät(e) geladen`);
-}
+      ${g.standort_raum ? `<div class="mc-detail">📍 ${esc(g.standort_raum)}</div>` : ""}`;
+          card.addEventListener("click", () => selectGeraet(g.id, null));
+          gcards.appendChild(card);
+        }
+        setStatus(`${data.length} Gerät(e) geladen`);
+      }
 
-// ── Gerät auswählen ───────────────────────────────────────────────────────────
-async function selectGeraet(id, trEl) {
-  currentGeraetId = id;
-  currentPruefId = currentEinwId = currentUebergId = currentDokId = currentVorkId = null;
-  document.querySelectorAll('#geraete-tbody tr').forEach(r => r.classList.remove('sel'));
-  document.querySelectorAll('#geraete-cards .mobile-card').forEach(c => {
-    c.classList.toggle('sel', parseInt(c.dataset.id) === id);
-  });
-  if (trEl) trEl.classList.add('sel');
-  if (isMobile()) {
-    document.body.classList.add('mobile-detail-active');
-    document.getElementById('btn-zurueck').style.display = 'inline-block';
-    document.getElementById('btn-neu').style.display = 'none';
-  }
-  await Promise.all([
-    loadDetail(id),
-    loadEinweisungen(id),
-    loadUebergaben(id),
-    loadPruefungen(id),
-    loadDokumente(id),
-    loadVorkommnisse(id),
-    loadHandbuecher(id),
-  ]);
-}
+      // ── Gerät auswählen ───────────────────────────────────────────────────────────
+      async function selectGeraet(id, trEl) {
+        currentGeraetId = id;
+        currentPruefId =
+          currentEinwId =
+          currentUebergId =
+          currentDokId =
+          currentVorkId =
+            null;
+        document
+          .querySelectorAll("#geraete-tbody tr")
+          .forEach((r) => r.classList.remove("sel"));
+        document
+          .querySelectorAll("#geraete-cards .mobile-card")
+          .forEach((c) => {
+            c.classList.toggle("sel", parseInt(c.dataset.id) === id);
+          });
+        if (trEl) trEl.classList.add("sel");
+        if (isMobile()) {
+          document.body.classList.add("mobile-detail-active");
+          document.getElementById("btn-zurueck").style.display = "inline-block";
+          document.getElementById("btn-neu").style.display = "none";
+        }
+        await Promise.all([
+          loadDetail(id),
+          loadEinweisungen(id),
+          loadUebergaben(id),
+          loadPruefungen(id),
+          loadDokumente(id),
+          loadVorkommnisse(id),
+          loadHandbuecher(id),
+        ]);
+      }
 
-// ── Gerätedaten (Detail-Tab) ──────────────────────────────────────────────────
-async function loadDetail(id) {
-  const d = await (await api('GET', `/api/geraete/${id}`)).json();
-  const sections = [
-    ['Gerätekennzeichnung (§14 MPBetreibV)', [
-      ['Bezeichnung', 'bezeichnung'], ['Art / Typ', 'art_typ'],
-      ['Seriennummer', 'seriennummer'], ['Loscode', 'loscode'],
-      ['Anschaffungsjahr', 'anschaffungsjahr'],
-      ['Inbetriebnahme', 'inbetriebnahmedatum'],
-      ['Außerdienststellung', 'ausserdienst_datum'],
-    ]],
-    ['Hersteller', [
-      ['Name', 'hersteller_name'], ['Anschrift', 'hersteller_anschrift'],
-      ['Tel', 'hersteller_tel'], ['E-Mail', 'hersteller_email'],
-      ['CE Kennzeichnung', 'ce_jahr'],
-    ]],
-    ['Klassifikation & UDI', [
-      ['Risikoklasse', 'risikoklasse'], ['UDI-DI', 'udi_di'],
-      ['UDI-PI', 'udi_pi'], ['EMDN-Code', 'emdn_code'],
-      ['Aktives Gerät', 'aktives_geraet', 'bool'],
-      ['Implantierbar', 'implantierbar', 'bool'],
-      ['Einmalprodukt', 'einmalprodukt', 'bool'],
-      ['Steril', 'steril', 'bool'],
-      ['Zweckbestimmung', 'zweckbestimmung'],
-    ]],
-    ['Betreiber / Standort', [
-      ['Betreiber', 'betreiber'], ['Adresse', 'betreiber_anschrift'],
-      ['Tel', 'betreiber_tel'], ['E-Mail', 'betreiber_email'],
-      ['Inventarnummer', 'inventarnummer'],
-      ['Verantwortliche Person', 'verantwortliche_person'],
-    ]],
-    ['IT-Sicherheit', [
-      ['Netzwerkanbindung', 'netzwerkanbindung', 'bool'],
-      ['Softwareversion', 'softwareversion'],
-    ]],
-    ['Bemerkungen', [['Bemerkungen', 'bemerkungen']]],
-  ];
-  let html = '';
-  for (const [title, fields] of sections) {
-    html += `<div class="sec-hd">${esc(title)}</div>`;
-    for (const [lbl, key, type] of fields) {
-      let v = d[key];
-      if (type === 'bool') v = v ? 'Ja' : 'Nein';
-      html += `<div class="frow"><span class="flabel">${esc(lbl)}:</span><span class="fval">${esc(v) || '<span style="color:#bbb">–</span>'}</span></div>`;
-    }
-  }
-  html += `<div class="audit">Erstellt: ${esc(d.erstellt_am)} &nbsp;|&nbsp; Geändert: ${esc(d.geaendert_am)}</div>`;
-  document.getElementById('detail-content').innerHTML = html;
-}
+      // ── Gerätedaten (Detail-Tab) ──────────────────────────────────────────────────
+      async function loadDetail(id) {
+        const d = await (await api("GET", `/api/geraete/${id}`)).json();
+        const sections = [
+          [
+            "Gerätekennzeichnung (§14 MPBetreibV)",
+            [
+              ["Bezeichnung", "bezeichnung"],
+              ["Art / Typ", "art_typ"],
+              ["Seriennummer", "seriennummer"],
+              ["Loscode", "loscode"],
+              ["Anschaffungsjahr", "anschaffungsjahr"],
+              ["Inbetriebnahme", "inbetriebnahmedatum"],
+              ["Außerdienststellung", "ausserdienst_datum"],
+            ],
+          ],
+          [
+            "Hersteller",
+            [
+              ["Name", "hersteller_name"],
+              ["Anschrift", "hersteller_anschrift"],
+              ["Tel", "hersteller_tel"],
+              ["E-Mail", "hersteller_email"],
+              ["CE Kennzeichnung", "ce_jahr"],
+            ],
+          ],
+          [
+            "Klassifikation & UDI",
+            [
+              ["Risikoklasse", "risikoklasse"],
+              ["UDI-DI", "udi_di"],
+              ["UDI-PI", "udi_pi"],
+              ["EMDN-Code", "emdn_code"],
+              ["Aktives Gerät", "aktives_geraet", "bool"],
+              ["Implantierbar", "implantierbar", "bool"],
+              ["Einmalprodukt", "einmalprodukt", "bool"],
+              ["Steril", "steril", "bool"],
+              ["Zweckbestimmung", "zweckbestimmung"],
+            ],
+          ],
+          [
+            "Betreiber / Standort",
+            [
+              ["Betreiber", "betreiber"],
+              ["Adresse", "betreiber_anschrift"],
+              ["Tel", "betreiber_tel"],
+              ["E-Mail", "betreiber_email"],
+              ["Inventarnummer", "inventarnummer"],
+              ["Verantwortliche Person", "verantwortliche_person"],
+            ],
+          ],
+          [
+            "IT-Sicherheit",
+            [
+              ["Netzwerkanbindung", "netzwerkanbindung", "bool"],
+              ["Softwareversion", "softwareversion"],
+            ],
+          ],
+          ["Bemerkungen", [["Bemerkungen", "bemerkungen"]]],
+        ];
+        let html = "";
+        for (const [title, fields] of sections) {
+          html += `<div class="sec-hd">${esc(title)}</div>`;
+          for (const [lbl, key, type] of fields) {
+            let v = d[key];
+            if (type === "bool") v = v ? "Ja" : "Nein";
+            html += `<div class="frow"><span class="flabel">${esc(lbl)}:</span><span class="fval">${esc(v) || '<span style="color:#bbb">–</span>'}</span></div>`;
+          }
+        }
+        html += `<div class="audit">Erstellt: ${esc(d.erstellt_am)} &nbsp;|&nbsp; Geändert: ${esc(d.geaendert_am)}</div>`;
+        document.getElementById("detail-content").innerHTML = html;
+      }
 
-// ── Prüfungen ─────────────────────────────────────────────────────────────────
-async function loadPruefungen(id) {
-  const data = await (await api('GET', `/api/geraete/${id}/pruefungen`)).json();
-  const today = new Date().toISOString().substring(0, 10);
-  const tbody  = document.getElementById('pruef-tbody');
-  const cards  = document.getElementById('pruef-cards');
-  tbody.innerHTML = '';
-  cards.innerHTML = '';
-  for (const p of data) {
-    const dok = await (await api('GET', `/api/pruefungen/${p.id}/dokument`)).json();
-    const f   = p.naechste_faelligkeit || '';
-    const fCls = (f && f < today) ? ' overdue' : (f ? ' ok-row' : '');
-    const dokCell = dok
-      ? `<a class="dok-link" href="/uploads/wartungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
+      // ── Prüfungen ─────────────────────────────────────────────────────────────────
+      async function loadPruefungen(id) {
+        const data = await (
+          await api("GET", `/api/geraete/${id}/pruefungen`)
+        ).json();
+        const today = new Date().toISOString().substring(0, 10);
+        const tbody = document.getElementById("pruef-tbody");
+        const cards = document.getElementById("pruef-cards");
+        tbody.innerHTML = "";
+        cards.innerHTML = "";
+        for (const p of data) {
+          const dok = await (
+            await api("GET", `/api/pruefungen/${p.id}/dokument`)
+          ).json();
+          const f = p.naechste_faelligkeit || "";
+          const fCls = f && f < today ? " overdue" : f ? " ok-row" : "";
+          const dokCell = dok
+            ? `<a class="dok-link" href="/uploads/wartungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
          <button class="dok-del-btn" onclick="deleteDokument(${dok.id}, event)" title="Dokument löschen">✕</button>`
-      : `<button class="dok-upload-btn" onclick="triggerUpload('wartungsprotokoll', ${p.id}, 'pruef-prog-${p.id}', event)">↑ Hochladen</button>
+            : `<button class="dok-upload-btn" onclick="triggerUpload('wartungsprotokoll', ${p.id}, 'pruef-prog-${p.id}', event)">↑ Hochladen</button>
          <span id="pruef-prog-${p.id}" class="upload-progress"></span>`;
 
-    // Tabellenzeile (Desktop)
-    const tr = document.createElement('tr');
-    if (fCls) tr.className = fCls.trim();
-    tr.innerHTML = `<td>${p.id}</td><td>${esc(p.art)}</td><td>${esc(p.datum)}</td><td>${esc(p.naechste_faelligkeit)}</td><td>${esc(p.pruefer)}</td><td>${esc(p.ergebnis)}</td><td>${dokCell}</td>`;
-    tr.addEventListener('click', () => {
-      document.querySelectorAll('#pruef-tbody tr').forEach(r => r.classList.remove('sel'));
-      tr.classList.add('sel');
-      currentPruefId = p.id;
-    });
-    tbody.appendChild(tr);
+          // Tabellenzeile (Desktop)
+          const tr = document.createElement("tr");
+          if (fCls) tr.className = fCls.trim();
+          tr.innerHTML = `<td>${p.id}</td><td>${esc(p.art)}</td><td>${esc(p.datum)}</td><td>${esc(p.naechste_faelligkeit)}</td><td>${esc(p.pruefer)}</td><td>${esc(p.ergebnis)}</td><td>${dokCell}</td>`;
+          tr.addEventListener("click", () => {
+            document
+              .querySelectorAll("#pruef-tbody tr")
+              .forEach((r) => r.classList.remove("sel"));
+            tr.classList.add("sel");
+            currentPruefId = p.id;
+          });
+          tbody.appendChild(tr);
 
-    // Karte (Mobil)
-    const card = document.createElement('div');
-    card.className = `mobile-card${fCls}`;
-    card.innerHTML = `
+          // Karte (Mobil)
+          const card = document.createElement("div");
+          card.className = `mobile-card${fCls}`;
+          card.innerHTML = `
       <div class="mc-title">🔧 ${esc(p.art)}</div>
-      <div class="mc-date">${esc(p.datum)}${f ? ` &nbsp;→&nbsp; ${esc(f)}` : ''}</div>
-      ${p.pruefer ? `<div class="mc-detail">Prüfer: ${esc(p.pruefer)}</div>` : ''}
+      <div class="mc-date">${esc(p.datum)}${f ? ` &nbsp;→&nbsp; ${esc(f)}` : ""}</div>
+      ${p.pruefer ? `<div class="mc-detail">Prüfer: ${esc(p.pruefer)}</div>` : ""}
       <div class="mc-row">
-        <span>${p.ergebnis ? (fCls.includes('overdue') ? '❌' : '✅') + ' ' + esc(p.ergebnis) : ''}</span>
+        <span>${p.ergebnis ? (fCls.includes("overdue") ? "❌" : "✅") + " " + esc(p.ergebnis) : ""}</span>
         <span>${dokCell}</span>
       </div>`;
-    card.addEventListener('click', () => {
-      document.querySelectorAll('#pruef-cards .mobile-card').forEach(c => c.classList.remove('sel'));
-      card.classList.add('sel');
-      currentPruefId = p.id;
-    });
-    cards.appendChild(card);
-  }
-}
+          card.addEventListener("click", () => {
+            document
+              .querySelectorAll("#pruef-cards .mobile-card")
+              .forEach((c) => c.classList.remove("sel"));
+            card.classList.add("sel");
+            currentPruefId = p.id;
+          });
+          cards.appendChild(card);
+        }
+      }
 
-// ── Einweisungen ──────────────────────────────────────────────────────────────
-async function loadEinweisungen(id) {
-  const data  = await (await api('GET', `/api/geraete/${id}/einweisungen`)).json();
-  const tbody = document.getElementById('einw-tbody');
-  const cards = document.getElementById('einw-cards');
-  tbody.innerHTML = '';
-  cards.innerHTML = '';
-  for (const e of data) {
-    const dok = await (await api('GET', `/api/einweisungen/${e.id}/dokument`)).json();
-    const dokCell = dok
-      ? `<a class="dok-link" href="/uploads/einweisungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
+      // ── Einweisungen ──────────────────────────────────────────────────────────────
+      async function loadEinweisungen(id) {
+        const data = await (
+          await api("GET", `/api/geraete/${id}/einweisungen`)
+        ).json();
+        const tbody = document.getElementById("einw-tbody");
+        const cards = document.getElementById("einw-cards");
+        tbody.innerHTML = "";
+        cards.innerHTML = "";
+        for (const e of data) {
+          const dok = await (
+            await api("GET", `/api/einweisungen/${e.id}/dokument`)
+          ).json();
+          const dokCell = dok
+            ? `<a class="dok-link" href="/uploads/einweisungsprotokolle/${esc(dok.dateiname)}" target="_blank">📄 ${esc(dok.originalname)}</a>
          <button class="dok-del-btn" onclick="deleteDokument(${dok.id}, event)" title="Dokument löschen">✕</button>`
-      : `<button class="dok-upload-btn" onclick="triggerUpload('einweisungsprotokoll', ${e.id}, 'einw-prog-${e.id}', event)">↑ Hochladen</button>
+            : `<button class="dok-upload-btn" onclick="triggerUpload('einweisungsprotokoll', ${e.id}, 'einw-prog-${e.id}', event)">↑ Hochladen</button>
          <span id="einw-prog-${e.id}" class="upload-progress"></span>`;
 
-    // Tabellenzeile (Desktop)
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${e.id}</td><td>${esc(e.datum)}</td><td>${esc(e.eingewiesene_person)}</td><td>${esc(e.beauftragte_person)}</td><td style="text-align:center">${esc(e.funktionspruefung)}</td><td>${dokCell}</td>`;
-    tr.addEventListener('click', () => {
-      document.querySelectorAll('#einw-tbody tr').forEach(r => r.classList.remove('sel'));
-      tr.classList.add('sel');
-      currentEinwId = e.id;
-    });
-    tbody.appendChild(tr);
+          // Tabellenzeile (Desktop)
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${e.id}</td><td>${esc(e.datum)}</td><td>${esc(e.eingewiesene_person)}</td><td>${esc(e.beauftragte_person)}</td><td style="text-align:center">${esc(e.funktionspruefung)}</td><td>${dokCell}</td>`;
+          tr.addEventListener("click", () => {
+            document
+              .querySelectorAll("#einw-tbody tr")
+              .forEach((r) => r.classList.remove("sel"));
+            tr.classList.add("sel");
+            currentEinwId = e.id;
+          });
+          tbody.appendChild(tr);
 
-    // Karte (Mobil)
-    const card = document.createElement('div');
-    card.className = 'mobile-card';
-    card.innerHTML = `
-      <div class="mc-title">👤 ${esc(e.eingewiesene_person) || '–'}</div>
+          // Karte (Mobil)
+          const card = document.createElement("div");
+          card.className = "mobile-card";
+          card.innerHTML = `
+      <div class="mc-title">👤 ${esc(e.eingewiesene_person) || "–"}</div>
       <div class="mc-date">${esc(e.datum)}</div>
-      ${e.beauftragte_person ? `<div class="mc-detail">Beauftragt: ${esc(e.beauftragte_person)}</div>` : ''}
+      ${e.beauftragte_person ? `<div class="mc-detail">Beauftragt: ${esc(e.beauftragte_person)}</div>` : ""}
       <div class="mc-row">
-        <span>${e.funktionspruefung === 'Ja' ? '✅ Funktionsprüfung' : ''}</span>
+        <span>${e.funktionspruefung === "Ja" ? "✅ Funktionsprüfung" : ""}</span>
         <span>${dokCell}</span>
       </div>`;
-    card.addEventListener('click', () => {
-      document.querySelectorAll('#einw-cards .mobile-card').forEach(c => c.classList.remove('sel'));
-      card.classList.add('sel');
-      currentEinwId = e.id;
-    });
-    cards.appendChild(card);
-  }
-}
+          card.addEventListener("click", () => {
+            document
+              .querySelectorAll("#einw-cards .mobile-card")
+              .forEach((c) => c.classList.remove("sel"));
+            card.classList.add("sel");
+            currentEinwId = e.id;
+          });
+          cards.appendChild(card);
+        }
+      }
 
-// ── Übergaben ─────────────────────────────────────────────────────────────────
-async function loadUebergaben(id) {
-  const data = await (await api('GET', `/api/geraete/${id}/uebergaben`)).json();
-  const tbody = document.getElementById('ueberg-tbody');
-  tbody.innerHTML = '';
-  for (const u of data) {
-    const tr = document.createElement('tr');
-    const protokoll = u.datei_name
-      ? `<a class="file-link" href="/uploads/${esc(u.datei_pfad)}" target="_blank">${esc(u.datei_name)}</a>`
-      : '<span style="color:#bbb">–</span>';
-    tr.innerHTML = `<td>${u.id}</td><td>${esc(u.datum)}</td><td>${esc(u.pruefer)}</td><td>${esc(u.empfaenger)}</td><td>${esc(u.funktionspruefung)}</td><td>${protokoll}</td>`;
-    tr.addEventListener('click', () => {
-      document.querySelectorAll('#ueberg-tbody tr').forEach(r => r.classList.remove('sel'));
-      tr.classList.add('sel');
-      currentUebergId = u.id;
-    });
-    tbody.appendChild(tr);
-  }
-}
+      // ── Übergaben ─────────────────────────────────────────────────────────────────
+      async function loadUebergaben(id) {
+        const data = await (
+          await api("GET", `/api/geraete/${id}/uebergaben`)
+        ).json();
+        const tbody = document.getElementById("ueberg-tbody");
+        tbody.innerHTML = "";
+        for (const u of data) {
+          const tr = document.createElement("tr");
+          const protokoll = u.datei_name
+            ? `<a class="file-link" href="/uploads/${esc(u.datei_pfad)}" target="_blank">${esc(u.datei_name)}</a>`
+            : '<span style="color:#bbb">–</span>';
+          tr.innerHTML = `<td>${u.id}</td><td>${esc(u.datum)}</td><td>${esc(u.pruefer)}</td><td>${esc(u.empfaenger)}</td><td>${esc(u.funktionspruefung)}</td><td>${protokoll}</td>`;
+          tr.addEventListener("click", () => {
+            document
+              .querySelectorAll("#ueberg-tbody tr")
+              .forEach((r) => r.classList.remove("sel"));
+            tr.classList.add("sel");
+            currentUebergId = u.id;
+          });
+          tbody.appendChild(tr);
+        }
+      }
 
-// ── Dokumente ─────────────────────────────────────────────────────────────────
-async function loadDokumente(id) {
-  const data = await (await api('GET', `/api/geraete/${id}/dokumente`)).json();
-  const tbody = document.getElementById('dok-tbody');
-  tbody.innerHTML = '';
-  for (const d of data) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${d.id}</td><td>${esc(d.dateiname)}</td><td>${esc(d.beschreibung)}</td><td>${esc(d.hochgeladen_am)}</td><td><a class="file-link" href="/uploads/${esc(d.dateipfad)}" target="_blank">&#x1F4C4; Öffnen</a></td>`;
-    tr.addEventListener('click', () => {
-      document.querySelectorAll('#dok-tbody tr').forEach(r => r.classList.remove('sel'));
-      tr.classList.add('sel');
-      currentDokId = d.id;
-    });
-    tbody.appendChild(tr);
-  }
-}
+      // ── Dokumente ─────────────────────────────────────────────────────────────────
+      async function loadDokumente(id) {
+        const data = await (
+          await api("GET", `/api/geraete/${id}/dokumente`)
+        ).json();
+        const tbody = document.getElementById("dok-tbody");
+        tbody.innerHTML = "";
+        for (const d of data) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${d.id}</td><td>${esc(d.dateiname)}</td><td>${esc(d.beschreibung)}</td><td>${esc(d.hochgeladen_am)}</td><td><a class="file-link" href="/uploads/${esc(d.dateipfad)}" target="_blank">&#x1F4C4; Öffnen</a></td>`;
+          tr.addEventListener("click", () => {
+            document
+              .querySelectorAll("#dok-tbody tr")
+              .forEach((r) => r.classList.remove("sel"));
+            tr.classList.add("sel");
+            currentDokId = d.id;
+          });
+          tbody.appendChild(tr);
+        }
+      }
 
-// ── Vorkommnisse ──────────────────────────────────────────────────────────────
-async function loadVorkommnisse(id) {
-  const data  = await (await api('GET', `/api/geraete/${id}/vorkommnisse`)).json();
-  const tbody = document.getElementById('vork-tbody');
-  const cards = document.getElementById('vork-cards');
-  tbody.innerHTML = '';
-  cards.innerHTML = '';
-  for (const v of data) {
-    // Tabellenzeile (Desktop)
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${v.id}</td><td>${esc(v.datum)}</td><td>${esc(v.art_stoerung)}</td><td>${esc(v.meldung_behoerde)}</td><td>${esc(v.meldung_hersteller)}</td>`;
-    tr.addEventListener('click', () => {
-      document.querySelectorAll('#vork-tbody tr').forEach(r => r.classList.remove('sel'));
-      tr.classList.add('sel');
-      currentVorkId = v.id;
-    });
-    tbody.appendChild(tr);
+      // ── Vorkommnisse ──────────────────────────────────────────────────────────────
+      async function loadVorkommnisse(id) {
+        const data = await (
+          await api("GET", `/api/geraete/${id}/vorkommnisse`)
+        ).json();
+        const tbody = document.getElementById("vork-tbody");
+        const cards = document.getElementById("vork-cards");
+        tbody.innerHTML = "";
+        cards.innerHTML = "";
+        for (const v of data) {
+          // Tabellenzeile (Desktop)
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${v.id}</td><td>${esc(v.datum)}</td><td>${esc(v.art_stoerung)}</td><td>${esc(v.meldung_behoerde)}</td><td>${esc(v.meldung_hersteller)}</td>`;
+          tr.addEventListener("click", () => {
+            document
+              .querySelectorAll("#vork-tbody tr")
+              .forEach((r) => r.classList.remove("sel"));
+            tr.classList.add("sel");
+            currentVorkId = v.id;
+          });
+          tbody.appendChild(tr);
 
-    // Karte (Mobil)
-    const card = document.createElement('div');
-    card.className = 'mobile-card';
-    card.innerHTML = `
-      <div class="mc-title">⚠️ ${esc(v.art_stoerung) || 'Vorkommnis'}</div>
+          // Karte (Mobil)
+          const card = document.createElement("div");
+          card.className = "mobile-card";
+          card.innerHTML = `
+      <div class="mc-title">⚠️ ${esc(v.art_stoerung) || "Vorkommnis"}</div>
       <div class="mc-date">${esc(v.datum)}</div>
-      ${v.meldung_behoerde  ? `<div class="mc-detail">Behörde: ${esc(v.meldung_behoerde)}</div>`  : ''}
-      ${v.meldung_hersteller ? `<div class="mc-detail">Hersteller: ${esc(v.meldung_hersteller)}</div>` : ''}`;
-    card.addEventListener('click', () => {
-      document.querySelectorAll('#vork-cards .mobile-card').forEach(c => c.classList.remove('sel'));
-      card.classList.add('sel');
-      currentVorkId = v.id;
-    });
-    cards.appendChild(card);
-  }
-}
+      ${v.meldung_behoerde ? `<div class="mc-detail">Behörde: ${esc(v.meldung_behoerde)}</div>` : ""}
+      ${v.meldung_hersteller ? `<div class="mc-detail">Hersteller: ${esc(v.meldung_hersteller)}</div>` : ""}`;
+          card.addEventListener("click", () => {
+            document
+              .querySelectorAll("#vork-cards .mobile-card")
+              .forEach((c) => c.classList.remove("sel"));
+            card.classList.add("sel");
+            currentVorkId = v.id;
+          });
+          cards.appendChild(card);
+        }
+      }
 
-// ── CRUD: Geräte ──────────────────────────────────────────────────────────────
-const GERAET_FIELDS = [
-  'bezeichnung','art_typ','seriennummer','loscode','anschaffungsjahr',
-  'inbetriebnahmedatum','ausserdienst_datum',
-  'hersteller_id','hersteller_name','hersteller_anschrift','hersteller_tel','hersteller_email',
-  'ce_jahr','risikoklasse','udi_di','udi_pi','emdn_code',
-  'aktives_geraet','implantierbar','einmalprodukt','steril','zweckbestimmung',
-  'betreiber_id','betreiber','betreiber_anschrift','betreiber_tel','betreiber_email',
-  'inventarnummer','verantwortliche_person','netzwerkanbindung','softwareversion','bemerkungen',
-];
-const BOOL_FIELDS = ['aktives_geraet','implantierbar','einmalprodukt','steril','netzwerkanbindung'];
-const INT_FIELDS  = ['hersteller_id','betreiber_id'];
+      // ── CRUD: Geräte ──────────────────────────────────────────────────────────────
+      const GERAET_FIELDS = [
+        "bezeichnung",
+        "art_typ",
+        "seriennummer",
+        "loscode",
+        "anschaffungsjahr",
+        "inbetriebnahmedatum",
+        "ausserdienst_datum",
+        "hersteller_id",
+        "hersteller_name",
+        "hersteller_anschrift",
+        "hersteller_tel",
+        "hersteller_email",
+        "ce_jahr",
+        "risikoklasse",
+        "udi_di",
+        "udi_pi",
+        "emdn_code",
+        "aktives_geraet",
+        "implantierbar",
+        "einmalprodukt",
+        "steril",
+        "zweckbestimmung",
+        "betreiber_id",
+        "betreiber",
+        "betreiber_anschrift",
+        "betreiber_tel",
+        "betreiber_email",
+        "inventarnummer",
+        "verantwortliche_person",
+        "netzwerkanbindung",
+        "softwareversion",
+        "bemerkungen",
+      ];
+      const BOOL_FIELDS = [
+        "aktives_geraet",
+        "implantierbar",
+        "einmalprodukt",
+        "steril",
+        "netzwerkanbindung",
+      ];
+      const INT_FIELDS = ["hersteller_id", "betreiber_id"];
 
-function openNewGeraet() {
-  editMode = false;
-  document.getElementById('dlg-geraet-title').textContent = 'Neues Gerät erfassen';
-  GERAET_FIELDS.forEach(k => setVal('f_' + k, null));
-  document.getElementById('hst-hint').style.display = 'none';
-  document.getElementById('btr-hint').style.display = 'none';
-  Promise.all([refreshHerstellerSelect(''), refreshBetreiberSelect('')]);
-  document.getElementById('dlg-geraet').showModal();
-}
+      function openNewGeraet() {
+        editMode = false;
+        document.getElementById("dlg-geraet-title").textContent =
+          "Neues Gerät erfassen";
+        GERAET_FIELDS.forEach((k) => setVal("f_" + k, null));
+        document.getElementById("hst-hint").style.display = "none";
+        document.getElementById("btr-hint").style.display = "none";
+        Promise.all([refreshHerstellerSelect(""), refreshBetreiberSelect("")]);
+        document.getElementById("dlg-geraet").showModal();
+      }
 
-async function openEditGeraet() {
-  if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  editMode = true;
-  document.getElementById('dlg-geraet-title').textContent = 'Gerät bearbeiten';
-  const d = await (await api('GET', `/api/geraete/${currentGeraetId}`)).json();
-  await Promise.all([
-    refreshHerstellerSelect(d.hersteller_id),
-    refreshBetreiberSelect(d.betreiber_id),
-  ]);
-  GERAET_FIELDS.forEach(k => setVal('f_' + k, d[k]));
-  document.getElementById('hst-hint').style.display = d.hersteller_id ? 'block' : 'none';
-  document.getElementById('btr-hint').style.display = d.betreiber_id  ? 'block' : 'none';
-  document.getElementById('dlg-geraet').showModal();
-}
+      async function openEditGeraet() {
+        if (!currentGeraetId) {
+          alert("Bitte zuerst ein Gerät auswählen.");
+          return;
+        }
+        editMode = true;
+        document.getElementById("dlg-geraet-title").textContent =
+          "Gerät bearbeiten";
+        const d = await (
+          await api("GET", `/api/geraete/${currentGeraetId}`)
+        ).json();
+        await Promise.all([
+          refreshHerstellerSelect(d.hersteller_id),
+          refreshBetreiberSelect(d.betreiber_id),
+        ]);
+        GERAET_FIELDS.forEach((k) => setVal("f_" + k, d[k]));
+        document.getElementById("hst-hint").style.display = d.hersteller_id
+          ? "block"
+          : "none";
+        document.getElementById("btr-hint").style.display = d.betreiber_id
+          ? "block"
+          : "none";
+        document.getElementById("dlg-geraet").showModal();
+      }
 
-async function deleteGeraet() {
-  if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  if (!confirm('Gerät und alle zugehörigen Einträge (Prüfungen, Einweisungen, Übergaben, Vorkommnisse) wirklich löschen?')) return;
-  await api('DELETE', `/api/geraete/${currentGeraetId}`);
-  currentGeraetId = null;
-  document.getElementById('detail-content').innerHTML = '<p id="detail-placeholder" style="color:#aaa;text-align:center;margin-top:60px;font-size:14px">Bitte ein Gerät aus der Liste auswählen.</p>';
-  ['pruef-tbody','einw-tbody','ueberg-tbody','dok-tbody','vork-tbody'].forEach(id =>
-    document.getElementById(id).innerHTML = '');
-  loadGeraete();
-}
+      async function deleteGeraet() {
+        if (!currentGeraetId) {
+          alert("Bitte zuerst ein Gerät auswählen.");
+          return;
+        }
+        if (
+          !confirm(
+            "Gerät und alle zugehörigen Einträge (Prüfungen, Einweisungen, Übergaben, Vorkommnisse) wirklich löschen?",
+          )
+        )
+          return;
+        await api("DELETE", `/api/geraete/${currentGeraetId}`);
+        currentGeraetId = null;
+        document.getElementById("detail-content").innerHTML =
+          '<p id="detail-placeholder" style="color:#aaa;text-align:center;margin-top:60px;font-size:14px">Bitte ein Gerät aus der Liste auswählen.</p>';
+        [
+          "pruef-tbody",
+          "einw-tbody",
+          "ueberg-tbody",
+          "dok-tbody",
+          "vork-tbody",
+        ].forEach((id) => (document.getElementById(id).innerHTML = ""));
+        loadGeraete();
+      }
 
-async function saveGeraet() {
-  const body = {};
-  GERAET_FIELDS.forEach(k => {
-    if (BOOL_FIELDS.includes(k)) {
-      body[k] = chk('f_' + k);
-    } else if (INT_FIELDS.includes(k)) {
-      const v = document.getElementById('f_' + k)?.value;
-      body[k] = (v && v !== '') ? parseInt(v, 10) : null;
-    } else {
-      body[k] = document.getElementById('f_' + k)?.value?.trim() || null;
-    }
-  });
-  if (!body.bezeichnung) { alert('Bezeichnung ist ein Pflichtfeld.'); return; }
+      async function saveGeraet() {
+        const body = {};
+        GERAET_FIELDS.forEach((k) => {
+          if (BOOL_FIELDS.includes(k)) {
+            body[k] = chk("f_" + k);
+          } else if (INT_FIELDS.includes(k)) {
+            const v = document.getElementById("f_" + k)?.value;
+            body[k] = v && v !== "" ? parseInt(v, 10) : null;
+          } else {
+            body[k] = document.getElementById("f_" + k)?.value?.trim() || null;
+          }
+        });
+        if (!body.bezeichnung) {
+          alert("Bezeichnung ist ein Pflichtfeld.");
+          return;
+        }
 
-  if (editMode) {
-    const res = await api('PUT', `/api/geraete/${currentGeraetId}`, body);
-    if (!res.ok) { alert((await res.json()).error); return; }
-  } else {
-    const res = await api('POST', '/api/geraete', body);
-    if (!res.ok) { alert((await res.json()).error); return; }
-    currentGeraetId = (await res.json()).id;
-  }
-  document.getElementById('dlg-geraet').close();
-  await loadGeraete();
-  document.querySelectorAll('#geraete-tbody tr').forEach(tr => {
-    if (parseInt(tr.cells[0].textContent) === currentGeraetId) {
-      tr.classList.add('sel');
-      selectGeraet(currentGeraetId, tr);
-    }
-  });
-}
+        if (editMode) {
+          const res = await api("PUT", `/api/geraete/${currentGeraetId}`, body);
+          if (!res.ok) {
+            alert((await res.json()).error);
+            return;
+          }
+        } else {
+          const res = await api("POST", "/api/geraete", body);
+          if (!res.ok) {
+            alert((await res.json()).error);
+            return;
+          }
+          currentGeraetId = (await res.json()).id;
+        }
+        document.getElementById("dlg-geraet").close();
+        await loadGeraete();
+        document.querySelectorAll("#geraete-tbody tr").forEach((tr) => {
+          if (parseInt(tr.cells[0].textContent) === currentGeraetId) {
+            tr.classList.add("sel");
+            selectGeraet(currentGeraetId, tr);
+          }
+        });
+      }
 
-// ── Stammdaten: Hersteller ────────────────────────────────────────────────────
-async function loadHstList() {
-  hstCache = await (await api('GET', '/api/hersteller')).json();
-  const tbody = document.getElementById('hst-tbody');
-  tbody.innerHTML = '';
-  for (const h of hstCache) {
-    const tr = document.createElement('tr');
-    if (h.id === currentHstId) tr.classList.add('sel');
-    tr.innerHTML = `<td>${h.id}</td><td>${esc(h.name)}</td>`;
-    tr.addEventListener('click', () => {
-      document.querySelectorAll('#hst-tbody tr').forEach(r => r.classList.remove('sel'));
-      tr.classList.add('sel');
-      currentHstId = h.id;
-      document.getElementById('hst-form-title').textContent = 'Hersteller bearbeiten';
-      setVal('hst_name', h.name);
-      setVal('hst_anschrift', h.anschrift);
-      setVal('hst_tel', h.tel);
-      setVal('hst_email', h.email);
-      setVal('hst_bemerkungen', h.bemerkungen);
-    });
-    tbody.appendChild(tr);
-  }
-}
+      // ── Stammdaten: Hersteller ────────────────────────────────────────────────────
+      async function loadHstList() {
+        hstCache = await (await api("GET", "/api/hersteller")).json();
+        const tbody = document.getElementById("hst-tbody");
+        tbody.innerHTML = "";
+        for (const h of hstCache) {
+          const tr = document.createElement("tr");
+          if (h.id === currentHstId) tr.classList.add("sel");
+          tr.innerHTML = `<td>${h.id}</td><td>${esc(h.name)}</td>`;
+          tr.addEventListener("click", () => {
+            document
+              .querySelectorAll("#hst-tbody tr")
+              .forEach((r) => r.classList.remove("sel"));
+            tr.classList.add("sel");
+            currentHstId = h.id;
+            document.getElementById("hst-form-title").textContent =
+              "Hersteller bearbeiten";
+            setVal("hst_name", h.name);
+            setVal("hst_anschrift", h.anschrift);
+            setVal("hst_tel", h.tel);
+            setVal("hst_email", h.email);
+            setVal("hst_bemerkungen", h.bemerkungen);
+          });
+          tbody.appendChild(tr);
+        }
+      }
 
-function hstNeu() {
-  currentHstId = null;
-  document.getElementById('hst-form-title').textContent = 'Neuer Hersteller';
-  ['hst_name','hst_anschrift','hst_tel','hst_email','hst_bemerkungen'].forEach(id => setVal(id, null));
-  document.querySelectorAll('#hst-tbody tr').forEach(r => r.classList.remove('sel'));
-}
+      function hstNeu() {
+        currentHstId = null;
+        document.getElementById("hst-form-title").textContent =
+          "Neuer Hersteller";
+        [
+          "hst_name",
+          "hst_anschrift",
+          "hst_tel",
+          "hst_email",
+          "hst_bemerkungen",
+        ].forEach((id) => setVal(id, null));
+        document
+          .querySelectorAll("#hst-tbody tr")
+          .forEach((r) => r.classList.remove("sel"));
+      }
 
-async function hstSave() {
-  const name = document.getElementById('hst_name').value.trim();
-  if (!name) { alert('Name ist ein Pflichtfeld.'); return; }
-  const body = {
-    name,
-    anschrift:   val('hst_anschrift'),
-    tel:         val('hst_tel'),
-    email:       val('hst_email'),
-    bemerkungen: document.getElementById('hst_bemerkungen').value.trim() || null,
-  };
-  let res;
-  if (currentHstId) {
-    res = await api('PUT', `/api/hersteller/${currentHstId}`, body);
-  } else {
-    res = await api('POST', '/api/hersteller', body);
-    if (res.ok) currentHstId = (await res.clone().json()).id;
-  }
-  if (!res.ok) { alert((await res.json()).error); return; }
-  setStatus('Hersteller gespeichert.');
-  await loadHstList();
-}
+      async function hstSave() {
+        const name = document.getElementById("hst_name").value.trim();
+        if (!name) {
+          alert("Name ist ein Pflichtfeld.");
+          return;
+        }
+        const body = {
+          name,
+          anschrift: val("hst_anschrift"),
+          tel: val("hst_tel"),
+          email: val("hst_email"),
+          bemerkungen:
+            document.getElementById("hst_bemerkungen").value.trim() || null,
+        };
+        let res;
+        if (currentHstId) {
+          res = await api("PUT", `/api/hersteller/${currentHstId}`, body);
+        } else {
+          res = await api("POST", "/api/hersteller", body);
+          if (res.ok) currentHstId = (await res.clone().json()).id;
+        }
+        if (!res.ok) {
+          alert((await res.json()).error);
+          return;
+        }
+        setStatus("Hersteller gespeichert.");
+        await loadHstList();
+      }
 
-async function hstDelete() {
-  if (!currentHstId) { alert('Bitte zuerst einen Hersteller auswählen.'); return; }
-  if (!confirm('Hersteller wirklich löschen?')) return;
-  await api('DELETE', `/api/hersteller/${currentHstId}`);
-  currentHstId = null;
-  hstNeu();
-  await loadHstList();
-  setStatus('Hersteller gelöscht.');
-}
+      async function hstDelete() {
+        if (!currentHstId) {
+          alert("Bitte zuerst einen Hersteller auswählen.");
+          return;
+        }
+        if (!confirm("Hersteller wirklich löschen?")) return;
+        await api("DELETE", `/api/hersteller/${currentHstId}`);
+        currentHstId = null;
+        hstNeu();
+        await loadHstList();
+        setStatus("Hersteller gelöscht.");
+      }
 
-async function openHerstellerMgmt() {
-  await loadHstList();
-  hstNeu();
-  document.getElementById('dlg-hersteller-mgmt').showModal();
-}
+      async function openHerstellerMgmt() {
+        await loadHstList();
+        hstNeu();
+        document.getElementById("dlg-hersteller-mgmt").showModal();
+      }
 
-async function closeHerstellerMgmt() {
-  document.getElementById('dlg-hersteller-mgmt').close();
-  await refreshHerstellerSelect();
-}
+      async function closeHerstellerMgmt() {
+        document.getElementById("dlg-hersteller-mgmt").close();
+        await refreshHerstellerSelect();
+      }
 
-// ── Stammdaten: Betreiber ─────────────────────────────────────────────────────
-async function loadBtrList() {
-  btrCache = await (await api('GET', '/api/betreiber')).json();
-  const tbody = document.getElementById('btr-tbody');
-  tbody.innerHTML = '';
-  for (const b of btrCache) {
-    const tr = document.createElement('tr');
-    if (b.id === currentBtrId) tr.classList.add('sel');
-    tr.innerHTML = `<td>${b.id}</td><td>${esc(b.name)}</td>`;
-    tr.addEventListener('click', () => {
-      document.querySelectorAll('#btr-tbody tr').forEach(r => r.classList.remove('sel'));
-      tr.classList.add('sel');
-      currentBtrId = b.id;
-      document.getElementById('btr-form-title').textContent = 'Betreiber bearbeiten';
-      setVal('btr_name', b.name);
-      setVal('btr_anschrift', b.anschrift);
-      setVal('btr_tel', b.tel);
-      setVal('btr_email', b.email);
-      setVal('btr_bemerkungen', b.bemerkungen);
-    });
-    tbody.appendChild(tr);
-  }
-}
+      // ── Stammdaten: Betreiber ─────────────────────────────────────────────────────
+      async function loadBtrList() {
+        btrCache = await (await api("GET", "/api/betreiber")).json();
+        const tbody = document.getElementById("btr-tbody");
+        tbody.innerHTML = "";
+        for (const b of btrCache) {
+          const tr = document.createElement("tr");
+          if (b.id === currentBtrId) tr.classList.add("sel");
+          tr.innerHTML = `<td>${b.id}</td><td>${esc(b.name)}</td>`;
+          tr.addEventListener("click", () => {
+            document
+              .querySelectorAll("#btr-tbody tr")
+              .forEach((r) => r.classList.remove("sel"));
+            tr.classList.add("sel");
+            currentBtrId = b.id;
+            document.getElementById("btr-form-title").textContent =
+              "Betreiber bearbeiten";
+            setVal("btr_name", b.name);
+            setVal("btr_anschrift", b.anschrift);
+            setVal("btr_tel", b.tel);
+            setVal("btr_email", b.email);
+            setVal("btr_bemerkungen", b.bemerkungen);
+          });
+          tbody.appendChild(tr);
+        }
+      }
 
-function btrNeu() {
-  currentBtrId = null;
-  document.getElementById('btr-form-title').textContent = 'Neuer Betreiber';
-  ['btr_name','btr_anschrift','btr_tel','btr_email','btr_bemerkungen'].forEach(id => setVal(id, null));
-  document.querySelectorAll('#btr-tbody tr').forEach(r => r.classList.remove('sel'));
-}
+      function btrNeu() {
+        currentBtrId = null;
+        document.getElementById("btr-form-title").textContent =
+          "Neuer Betreiber";
+        [
+          "btr_name",
+          "btr_anschrift",
+          "btr_tel",
+          "btr_email",
+          "btr_bemerkungen",
+        ].forEach((id) => setVal(id, null));
+        document
+          .querySelectorAll("#btr-tbody tr")
+          .forEach((r) => r.classList.remove("sel"));
+      }
 
-async function btrSave() {
-  const name = document.getElementById('btr_name').value.trim();
-  if (!name) { alert('Name ist ein Pflichtfeld.'); return; }
-  const body = {
-    name,
-    anschrift:   val('btr_anschrift'),
-    tel:         val('btr_tel'),
-    email:       val('btr_email'),
-    bemerkungen: document.getElementById('btr_bemerkungen').value.trim() || null,
-  };
-  let res;
-  if (currentBtrId) {
-    res = await api('PUT', `/api/betreiber/${currentBtrId}`, body);
-  } else {
-    res = await api('POST', '/api/betreiber', body);
-    if (res.ok) currentBtrId = (await res.clone().json()).id;
-  }
-  if (!res.ok) { alert((await res.json()).error); return; }
-  setStatus('Betreiber gespeichert.');
-  await loadBtrList();
-}
+      async function btrSave() {
+        const name = document.getElementById("btr_name").value.trim();
+        if (!name) {
+          alert("Name ist ein Pflichtfeld.");
+          return;
+        }
+        const body = {
+          name,
+          anschrift: val("btr_anschrift"),
+          tel: val("btr_tel"),
+          email: val("btr_email"),
+          bemerkungen:
+            document.getElementById("btr_bemerkungen").value.trim() || null,
+        };
+        let res;
+        if (currentBtrId) {
+          res = await api("PUT", `/api/betreiber/${currentBtrId}`, body);
+        } else {
+          res = await api("POST", "/api/betreiber", body);
+          if (res.ok) currentBtrId = (await res.clone().json()).id;
+        }
+        if (!res.ok) {
+          alert((await res.json()).error);
+          return;
+        }
+        setStatus("Betreiber gespeichert.");
+        await loadBtrList();
+      }
 
-async function btrDelete() {
-  if (!currentBtrId) { alert('Bitte zuerst einen Betreiber auswählen.'); return; }
-  if (!confirm('Betreiber wirklich löschen?')) return;
-  await api('DELETE', `/api/betreiber/${currentBtrId}`);
-  currentBtrId = null;
-  btrNeu();
-  await loadBtrList();
-  setStatus('Betreiber gelöscht.');
-}
+      async function btrDelete() {
+        if (!currentBtrId) {
+          alert("Bitte zuerst einen Betreiber auswählen.");
+          return;
+        }
+        if (!confirm("Betreiber wirklich löschen?")) return;
+        await api("DELETE", `/api/betreiber/${currentBtrId}`);
+        currentBtrId = null;
+        btrNeu();
+        await loadBtrList();
+        setStatus("Betreiber gelöscht.");
+      }
 
-async function openBetreiberMgmt() {
-  await loadBtrList();
-  btrNeu();
-  document.getElementById('dlg-betreiber-mgmt').showModal();
-}
+      async function openBetreiberMgmt() {
+        await loadBtrList();
+        btrNeu();
+        document.getElementById("dlg-betreiber-mgmt").showModal();
+      }
 
-async function closeBetreiberMgmt() {
-  document.getElementById('dlg-betreiber-mgmt').close();
-  await refreshBetreiberSelect();
-}
+      async function closeBetreiberMgmt() {
+        document.getElementById("dlg-betreiber-mgmt").close();
+        await refreshBetreiberSelect();
+      }
 
-// ── Dropdowns im Gerät-Dialog ─────────────────────────────────────────────────
-async function refreshHerstellerSelect(selectedId) {
-  const sel = document.getElementById('f_hersteller_id');
-  if (!sel) return;
-  const data = await (await api('GET', '/api/hersteller')).json();
-  hstCache = data;
-  const current = selectedId ?? sel.value;
-  sel.innerHTML = '<option value="">— Kein / manuell eingeben —</option>';
-  for (const h of data) {
-    const opt = document.createElement('option');
-    opt.value = h.id; opt.textContent = h.name;
-    if (String(h.id) === String(current)) opt.selected = true;
-    sel.appendChild(opt);
-  }
-}
+      // ── Dropdowns im Gerät-Dialog ─────────────────────────────────────────────────
+      async function refreshHerstellerSelect(selectedId) {
+        const sel = document.getElementById("f_hersteller_id");
+        if (!sel) return;
+        const data = await (await api("GET", "/api/hersteller")).json();
+        hstCache = data;
+        const current = selectedId ?? sel.value;
+        sel.innerHTML = '<option value="">— Kein / manuell eingeben —</option>';
+        for (const h of data) {
+          const opt = document.createElement("option");
+          opt.value = h.id;
+          opt.textContent = h.name;
+          if (String(h.id) === String(current)) opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }
 
-async function refreshBetreiberSelect(selectedId) {
-  const sel = document.getElementById('f_betreiber_id');
-  if (!sel) return;
-  const data = await (await api('GET', '/api/betreiber')).json();
-  btrCache = data;
-  const current = selectedId ?? sel.value;
-  sel.innerHTML = '<option value="">— Kein / manuell eingeben —</option>';
-  for (const b of data) {
-    const opt = document.createElement('option');
-    opt.value = b.id; opt.textContent = b.name;
-    if (String(b.id) === String(current)) opt.selected = true;
-    sel.appendChild(opt);
-  }
-}
+      async function refreshBetreiberSelect(selectedId) {
+        const sel = document.getElementById("f_betreiber_id");
+        if (!sel) return;
+        const data = await (await api("GET", "/api/betreiber")).json();
+        btrCache = data;
+        const current = selectedId ?? sel.value;
+        sel.innerHTML = '<option value="">— Kein / manuell eingeben —</option>';
+        for (const b of data) {
+          const opt = document.createElement("option");
+          opt.value = b.id;
+          opt.textContent = b.name;
+          if (String(b.id) === String(current)) opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }
 
-async function onHerstellerSelect() {
-  const id = document.getElementById('f_hersteller_id').value;
-  const hint = document.getElementById('hst-hint');
-  if (!id) { hint.style.display = 'none'; return; }
-  const h = hstCache.find(x => String(x.id) === id)
-         || await (await api('GET', `/api/hersteller/${id}`)).json();
-  setVal('f_hersteller_name',      h.name);
-  setVal('f_hersteller_anschrift', h.anschrift);
-  setVal('f_hersteller_tel',       h.tel);
-  setVal('f_hersteller_email',     h.email);
-  hint.style.display = 'block';
-}
+      async function onHerstellerSelect() {
+        const id = document.getElementById("f_hersteller_id").value;
+        const hint = document.getElementById("hst-hint");
+        if (!id) {
+          hint.style.display = "none";
+          return;
+        }
+        const h =
+          hstCache.find((x) => String(x.id) === id) ||
+          (await (await api("GET", `/api/hersteller/${id}`)).json());
+        setVal("f_hersteller_name", h.name);
+        setVal("f_hersteller_anschrift", h.anschrift);
+        setVal("f_hersteller_tel", h.tel);
+        setVal("f_hersteller_email", h.email);
+        hint.style.display = "block";
+      }
 
-async function onBetreiberSelect() {
-  const id = document.getElementById('f_betreiber_id').value;
-  const hint = document.getElementById('btr-hint');
-  if (!id) { hint.style.display = 'none'; return; }
-  const b = btrCache.find(x => String(x.id) === id)
-         || await (await api('GET', `/api/betreiber/${id}`)).json();
-  setVal('f_betreiber',           b.name);
-  setVal('f_betreiber_anschrift', b.anschrift);
-  setVal('f_betreiber_tel',       b.tel);
-  setVal('f_betreiber_email',     b.email);
-  hint.style.display = 'block';
-}
+      async function onBetreiberSelect() {
+        const id = document.getElementById("f_betreiber_id").value;
+        const hint = document.getElementById("btr-hint");
+        if (!id) {
+          hint.style.display = "none";
+          return;
+        }
+        const b =
+          btrCache.find((x) => String(x.id) === id) ||
+          (await (await api("GET", `/api/betreiber/${id}`)).json());
+        setVal("f_betreiber", b.name);
+        setVal("f_betreiber_anschrift", b.anschrift);
+        setVal("f_betreiber_tel", b.tel);
+        setVal("f_betreiber_email", b.email);
+        hint.style.display = "block";
+      }
 
-// ── CRUD: Prüfungen ───────────────────────────────────────────────────────────
-function openNewPruefung() {
-  if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  ['p_art','p_datum','p_naechste_faelligkeit','p_pruefer','p_ergebnis',
-   'p_messwerte','p_messverfahren','p_maengel','p_korrektivmassnahmen','p_bemerkungen']
-  .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.getElementById('dlg-pruef').showModal();
-}
+      // ── CRUD: Prüfungen ───────────────────────────────────────────────────────────
+      function openNewPruefung() {
+        if (!currentGeraetId) {
+          alert("Bitte zuerst ein Gerät auswählen.");
+          return;
+        }
+        [
+          "p_art",
+          "p_datum",
+          "p_naechste_faelligkeit",
+          "p_pruefer",
+          "p_ergebnis",
+          "p_messwerte",
+          "p_messverfahren",
+          "p_maengel",
+          "p_korrektivmassnahmen",
+          "p_bemerkungen",
+        ].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+        document.getElementById("dlg-pruef").showModal();
+      }
 
-async function savePruefung() {
-  const art = val('p_art'), datum = val('p_datum');
-  if (!art || !datum) { alert('Art und Datum sind Pflichtfelder.'); return; }
-  const res = await api('POST', '/api/pruefungen', {
-    geraet_id: currentGeraetId, art, datum,
-    naechste_faelligkeit: val('p_naechste_faelligkeit'),
-    pruefer: val('p_pruefer'), ergebnis: val('p_ergebnis'),
-    messwerte: val('p_messwerte'), messverfahren: val('p_messverfahren'),
-    maengel: document.getElementById('p_maengel')?.value?.trim() || null,
-    korrektivmassnahmen: document.getElementById('p_korrektivmassnahmen')?.value?.trim() || null,
-    bemerkungen: document.getElementById('p_bemerkungen')?.value?.trim() || null,
-  });
-  if (!res.ok) { alert((await res.json()).error); return; }
-  document.getElementById('dlg-pruef').close();
-  loadPruefungen(currentGeraetId);
-}
+      async function savePruefung() {
+        const art = val("p_art"),
+          datum = val("p_datum");
+        if (!art || !datum) {
+          alert("Art und Datum sind Pflichtfelder.");
+          return;
+        }
+        const res = await api("POST", "/api/pruefungen", {
+          geraet_id: currentGeraetId,
+          art,
+          datum,
+          naechste_faelligkeit: val("p_naechste_faelligkeit"),
+          pruefer: val("p_pruefer"),
+          ergebnis: val("p_ergebnis"),
+          messwerte: val("p_messwerte"),
+          messverfahren: val("p_messverfahren"),
+          maengel: document.getElementById("p_maengel")?.value?.trim() || null,
+          korrektivmassnahmen:
+            document.getElementById("p_korrektivmassnahmen")?.value?.trim() ||
+            null,
+          bemerkungen:
+            document.getElementById("p_bemerkungen")?.value?.trim() || null,
+        });
+        if (!res.ok) {
+          alert((await res.json()).error);
+          return;
+        }
+        document.getElementById("dlg-pruef").close();
+        loadPruefungen(currentGeraetId);
+      }
 
-async function deletePruefung() {
-  if (!currentPruefId) { alert('Bitte zuerst einen Prüfeintrag auswählen.'); return; }
-  if (!confirm('Prüfeintrag löschen?')) return;
-  await api('DELETE', `/api/pruefungen/${currentPruefId}`);
-  currentPruefId = null;
-  loadPruefungen(currentGeraetId);
-}
+      async function deletePruefung() {
+        if (!currentPruefId) {
+          alert("Bitte zuerst einen Prüfeintrag auswählen.");
+          return;
+        }
+        if (!confirm("Prüfeintrag löschen?")) return;
+        await api("DELETE", `/api/pruefungen/${currentPruefId}`);
+        currentPruefId = null;
+        loadPruefungen(currentGeraetId);
+      }
 
-// ── CRUD: Einweisungen ────────────────────────────────────────────────────────
-function openNewEinweisung() {
-  if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  ['e_datum','e_eingewiesene_person','e_beauftragte_person','e_bemerkungen'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('e_funktionspruefung').checked = false;
-  document.getElementById('dlg-einw').showModal();
-}
+      // ── CRUD: Einweisungen ────────────────────────────────────────────────────────
+      function openNewEinweisung() {
+        if (!currentGeraetId) {
+          alert("Bitte zuerst ein Gerät auswählen.");
+          return;
+        }
+        [
+          "e_datum",
+          "e_eingewiesene_person",
+          "e_beauftragte_person",
+          "e_bemerkungen",
+        ].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+        document.getElementById("e_funktionspruefung").checked = false;
+        document.getElementById("dlg-einw").showModal();
+      }
 
-async function saveEinweisung() {
-  const datum = val('e_datum');
-  if (!datum) { alert('Datum ist ein Pflichtfeld.'); return; }
-  const res = await api('POST', '/api/einweisungen', {
-    geraet_id: currentGeraetId, datum,
-    eingewiesene_person: val('e_eingewiesene_person'),
-    beauftragte_person:  val('e_beauftragte_person'),
-    funktionspruefung:   chk('e_funktionspruefung'),
-    bemerkungen: document.getElementById('e_bemerkungen')?.value?.trim() || null,
-  });
-  if (!res.ok) { alert((await res.json()).error); return; }
-  document.getElementById('dlg-einw').close();
-  loadEinweisungen(currentGeraetId);
-}
+      async function saveEinweisung() {
+        const datum = val("e_datum");
+        if (!datum) {
+          alert("Datum ist ein Pflichtfeld.");
+          return;
+        }
+        const res = await api("POST", "/api/einweisungen", {
+          geraet_id: currentGeraetId,
+          datum,
+          eingewiesene_person: val("e_eingewiesene_person"),
+          beauftragte_person: val("e_beauftragte_person"),
+          funktionspruefung: chk("e_funktionspruefung"),
+          bemerkungen:
+            document.getElementById("e_bemerkungen")?.value?.trim() || null,
+        });
+        if (!res.ok) {
+          alert((await res.json()).error);
+          return;
+        }
+        document.getElementById("dlg-einw").close();
+        loadEinweisungen(currentGeraetId);
+      }
 
-async function deleteEinweisung() {
-  if (!currentEinwId) { alert('Bitte zuerst einen Einweisungseintrag auswählen.'); return; }
-  if (!confirm('Einweisungseintrag löschen?')) return;
-  await api('DELETE', `/api/einweisungen/${currentEinwId}`);
-  currentEinwId = null;
-  loadEinweisungen(currentGeraetId);
-}
+      async function deleteEinweisung() {
+        if (!currentEinwId) {
+          alert("Bitte zuerst einen Einweisungseintrag auswählen.");
+          return;
+        }
+        if (!confirm("Einweisungseintrag löschen?")) return;
+        await api("DELETE", `/api/einweisungen/${currentEinwId}`);
+        currentEinwId = null;
+        loadEinweisungen(currentGeraetId);
+      }
 
-// ── CRUD: Übergaben ───────────────────────────────────────────────────────────
-function openNewUebergabe() {
-  if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  ['ue_datum','ue_pruefer','ue_empfaenger','ue_bemerkungen'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  setVal('ue_funktionspruefung', 'Nicht geprüft');
-  const fi = document.getElementById('ue_datei');
-  if (fi) fi.value = '';
-  document.getElementById('dlg-ueberg').showModal();
-}
+      // ── CRUD: Übergaben ───────────────────────────────────────────────────────────
+      function openNewUebergabe() {
+        if (!currentGeraetId) {
+          alert("Bitte zuerst ein Gerät auswählen.");
+          return;
+        }
+        ["ue_datum", "ue_pruefer", "ue_empfaenger", "ue_bemerkungen"].forEach(
+          (id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+          },
+        );
+        setVal("ue_funktionspruefung", "Nicht geprüft");
+        const fi = document.getElementById("ue_datei");
+        if (fi) fi.value = "";
+        document.getElementById("dlg-ueberg").showModal();
+      }
 
-async function saveUebergabe() {
-  const datum = val('ue_datum');
-  if (!datum) { alert('Datum ist ein Pflichtfeld.'); return; }
-  const res = await api('POST', '/api/uebergaben', {
-    geraet_id: currentGeraetId, datum,
-    pruefer:            val('ue_pruefer'),
-    empfaenger:         val('ue_empfaenger'),
-    funktionspruefung:  val('ue_funktionspruefung'),
-    bemerkungen: document.getElementById('ue_bemerkungen')?.value?.trim() || null,
-  });
-  if (!res.ok) { alert((await res.json()).error); return; }
-  const { id } = await res.json();
+      async function saveUebergabe() {
+        const datum = val("ue_datum");
+        if (!datum) {
+          alert("Datum ist ein Pflichtfeld.");
+          return;
+        }
+        const res = await api("POST", "/api/uebergaben", {
+          geraet_id: currentGeraetId,
+          datum,
+          pruefer: val("ue_pruefer"),
+          empfaenger: val("ue_empfaenger"),
+          funktionspruefung: val("ue_funktionspruefung"),
+          bemerkungen:
+            document.getElementById("ue_bemerkungen")?.value?.trim() || null,
+        });
+        if (!res.ok) {
+          alert((await res.json()).error);
+          return;
+        }
+        const { id } = await res.json();
 
-  const fileInput = document.getElementById('ue_datei');
-  if (fileInput?.files?.length) {
-    const fd = new FormData();
-    fd.append('datei', fileInput.files[0]);
-    const up = await fetch(`/api/uebergaben/${id}/upload`, { method: 'POST', body: fd });
-    if (!up.ok) setStatus('Warnung: Protokolldatei konnte nicht hochgeladen werden.');
-  }
+        const fileInput = document.getElementById("ue_datei");
+        if (fileInput?.files?.length) {
+          const fd = new FormData();
+          fd.append("datei", fileInput.files[0]);
+          const up = await fetch(`/api/uebergaben/${id}/upload`, {
+            method: "POST",
+            body: fd,
+          });
+          if (!up.ok)
+            setStatus(
+              "Warnung: Protokolldatei konnte nicht hochgeladen werden.",
+            );
+        }
 
-  document.getElementById('dlg-ueberg').close();
-  loadUebergaben(currentGeraetId);
-  setStatus('Übergabe gespeichert.');
-}
+        document.getElementById("dlg-ueberg").close();
+        loadUebergaben(currentGeraetId);
+        setStatus("Übergabe gespeichert.");
+      }
 
-async function deleteUebergabe() {
-  if (!currentUebergId) { alert('Bitte zuerst einen Übergabeeintrag auswählen.'); return; }
-  if (!confirm('Übergabeeintrag löschen?')) return;
-  await api('DELETE', `/api/uebergaben/${currentUebergId}`);
-  currentUebergId = null;
-  loadUebergaben(currentGeraetId);
-}
+      async function deleteUebergabe() {
+        if (!currentUebergId) {
+          alert("Bitte zuerst einen Übergabeeintrag auswählen.");
+          return;
+        }
+        if (!confirm("Übergabeeintrag löschen?")) return;
+        await api("DELETE", `/api/uebergaben/${currentUebergId}`);
+        currentUebergId = null;
+        loadUebergaben(currentGeraetId);
+      }
 
-// ── CRUD: Dokumente ───────────────────────────────────────────────────────────
-function triggerDokUpload() {
-  if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  document.getElementById('dok-file-input').click();
-}
+      // ── CRUD: Dokumente ───────────────────────────────────────────────────────────
+      function triggerDokUpload() {
+        if (!currentGeraetId) {
+          alert("Bitte zuerst ein Gerät auswählen.");
+          return;
+        }
+        document.getElementById("dok-file-input").click();
+      }
 
-async function uploadDokument() {
-  const input = document.getElementById('dok-file-input');
-  if (!input.files.length) return;
-  const fd = new FormData();
-  fd.append('datei', input.files[0]);
-  fd.append('geraet_id', currentGeraetId);
-  const res = await fetch('/api/dokumente/upload', { method: 'POST', body: fd });
-  if (!res.ok) { alert((await res.json()).error); return; }
-  input.value = '';
-  loadDokumente(currentGeraetId);
-  setStatus('Dokument hochgeladen.');
-}
+      async function uploadDokument() {
+        const input = document.getElementById("dok-file-input");
+        if (!input.files.length) return;
+        const fd = new FormData();
+        fd.append("datei", input.files[0]);
+        fd.append("geraet_id", currentGeraetId);
+        const res = await fetch("/api/dokumente/upload", {
+          method: "POST",
+          body: fd,
+        });
+        if (!res.ok) {
+          alert((await res.json()).error);
+          return;
+        }
+        input.value = "";
+        loadDokumente(currentGeraetId);
+        setStatus("Dokument hochgeladen.");
+      }
 
-async function deleteDokument() {
-  if (!currentDokId) { alert('Bitte zuerst ein Dokument auswählen.'); return; }
-  if (!confirm('Dokument löschen? Die Datei bleibt auf dem Server erhalten.')) return;
-  await api('DELETE', `/api/dokumente/${currentDokId}`);
-  currentDokId = null;
-  loadDokumente(currentGeraetId);
-}
+      async function deleteDokument() {
+        if (!currentDokId) {
+          alert("Bitte zuerst ein Dokument auswählen.");
+          return;
+        }
+        if (
+          !confirm(
+            "Dokument löschen? Die Datei bleibt auf dem Server erhalten.",
+          )
+        )
+          return;
+        await api("DELETE", `/api/dokumente/${currentDokId}`);
+        currentDokId = null;
+        loadDokumente(currentGeraetId);
+      }
 
-// ── CRUD: Vorkommnisse ────────────────────────────────────────────────────────
-function openNewVorkommnis() {
-  if (!currentGeraetId) { alert('Bitte zuerst ein Gerät auswählen.'); return; }
-  ['v_datum','v_art_stoerung','v_folgen','v_meldung_behoerde','v_meldung_hersteller',
-   'v_korrektivmassnahmen','v_bemerkungen'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  document.getElementById('dlg-vork').showModal();
-}
+      // ── CRUD: Vorkommnisse ────────────────────────────────────────────────────────
+      function openNewVorkommnis() {
+        if (!currentGeraetId) {
+          alert("Bitte zuerst ein Gerät auswählen.");
+          return;
+        }
+        [
+          "v_datum",
+          "v_art_stoerung",
+          "v_folgen",
+          "v_meldung_behoerde",
+          "v_meldung_hersteller",
+          "v_korrektivmassnahmen",
+          "v_bemerkungen",
+        ].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+        document.getElementById("dlg-vork").showModal();
+      }
 
-async function saveVorkommnis() {
-  const datum = val('v_datum');
-  if (!datum) { alert('Datum ist ein Pflichtfeld.'); return; }
-  const res = await api('POST', '/api/vorkommnisse', {
-    geraet_id: currentGeraetId, datum,
-    art_stoerung:        val('v_art_stoerung'),
-    folgen:              document.getElementById('v_folgen')?.value?.trim() || null,
-    meldung_behoerde:    val('v_meldung_behoerde'),
-    meldung_hersteller:  val('v_meldung_hersteller'),
-    korrektivmassnahmen: document.getElementById('v_korrektivmassnahmen')?.value?.trim() || null,
-    bemerkungen:         document.getElementById('v_bemerkungen')?.value?.trim() || null,
-  });
-  if (!res.ok) { alert((await res.json()).error); return; }
-  document.getElementById('dlg-vork').close();
-  loadVorkommnisse(currentGeraetId);
-}
+      async function saveVorkommnis() {
+        const datum = val("v_datum");
+        if (!datum) {
+          alert("Datum ist ein Pflichtfeld.");
+          return;
+        }
+        const res = await api("POST", "/api/vorkommnisse", {
+          geraet_id: currentGeraetId,
+          datum,
+          art_stoerung: val("v_art_stoerung"),
+          folgen: document.getElementById("v_folgen")?.value?.trim() || null,
+          meldung_behoerde: val("v_meldung_behoerde"),
+          meldung_hersteller: val("v_meldung_hersteller"),
+          korrektivmassnahmen:
+            document.getElementById("v_korrektivmassnahmen")?.value?.trim() ||
+            null,
+          bemerkungen:
+            document.getElementById("v_bemerkungen")?.value?.trim() || null,
+        });
+        if (!res.ok) {
+          alert((await res.json()).error);
+          return;
+        }
+        document.getElementById("dlg-vork").close();
+        loadVorkommnisse(currentGeraetId);
+      }
 
-async function deleteVorkommnis() {
-  if (!currentVorkId) { alert('Bitte zuerst einen Vorkommniseintrag auswählen.'); return; }
-  if (!confirm('Vorkommnis löschen?')) return;
-  await api('DELETE', `/api/vorkommnisse/${currentVorkId}`);
-  currentVorkId = null;
-  loadVorkommnisse(currentGeraetId);
-}
+      async function deleteVorkommnis() {
+        if (!currentVorkId) {
+          alert("Bitte zuerst einen Vorkommniseintrag auswählen.");
+          return;
+        }
+        if (!confirm("Vorkommnis löschen?")) return;
+        await api("DELETE", `/api/vorkommnisse/${currentVorkId}`);
+        currentVorkId = null;
+        loadVorkommnisse(currentGeraetId);
+      }
 
-// ── Bestandsliste ─────────────────────────────────────────────────────────────
-async function openBestandsliste() {
-  const data = await (await api('GET', '/api/bestandsliste')).json();
-  const datum = new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' });
-  const rows = data.map(g => `
+      // ── Bestandsliste ─────────────────────────────────────────────────────────────
+      async function openBestandsliste() {
+        const data = await (await api("GET", "/api/bestandsliste")).json();
+        const datum = new Date().toLocaleDateString("de-DE", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+        const rows = data
+          .map(
+            (g) => `
     <tr>
       <td>${esc(g.id)}</td>
       <td><strong>${esc(g.bezeichnung)}</strong></td>
@@ -1607,10 +2444,12 @@ async function openBestandsliste() {
       <td>${esc(g.betreiber)}</td>
       <td>${esc(g.inventarnummer)}</td>
       <td>${esc(g.inbetriebnahmedatum)}</td>
-    </tr>`).join('');
+    </tr>`,
+          )
+          .join("");
 
-  const win = window.open('', '_blank', 'width=1200,height=800');
-  win.document.write(`<!DOCTYPE html>
+        const win = window.open("", "_blank", "width=1200,height=800");
+        win.document.write(`<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -1671,11 +2510,11 @@ async function openBestandsliste() {
 </div>
 </body>
 </html>`);
-  win.document.close();
-}
+        win.document.close();
+      }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-loadGeraete();
-</script>
-</body>
+      // ── Init ──────────────────────────────────────────────────────────────────────
+      loadGeraete();
+    </script>
+  </body>
 </html>

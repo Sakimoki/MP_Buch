@@ -16,6 +16,7 @@ const INITIAL = {
   betreiber_tel: '', betreiber_email: '',
   inventarnummer: '', verantwortliche_person: '',
   betreiber_typ: 'Cooperative Mensch',
+  stk_anlage1: 'nein', stk_datum: '',
   mtk_anlage2: 'nein', mtk_datum: '', wartung_datum: '',
   netzwerkanbindung: false, softwareversion: '', bemerkungen: '',
 }
@@ -222,17 +223,27 @@ export default function GeraetDialog({ mode, onClose, onSaved }) {
             <option>Leistungserbringer/Dritte</option>
             <option>Cooperative Mensch</option>
           </select></div>
-
-        <div className="form-sec">MTK / Anlage 2</div>
-        <div className="form-row"><label>MTK/Anlage2 Relevant</label>
+        <div className="form-sec">MTK/STK/Wartung</div>
+          <div className="form-row"><label>STK/Anlage 1 Relevant</label>
+        <select name="stk_anlage1" value={form.stk_anlage1} onChange={set}>
+          <option value="nein">Nein</option>
+          <option value="ja">Ja</option>
+        </select></div>
+        {form.stk_anlage1 === 'ja' && (
+        <div className="form-row"><label>STK (Fälligkeit)</label>
+          <input type="date" name="stk_datum" value={form.stk_datum} onChange={set} /></div>
+        )}
+        <div className="form-row"><label>MTK/Anlage 2 Relevant</label>
           <select name="mtk_anlage2" value={form.mtk_anlage2} onChange={set}>
-            <option>nein</option>
+            <option>Nein</option>
             <option>Elektrothermometer</option>
             <option>Infrarot-Strahlungsthermometer</option>
             <option>Blutdruckmessung</option>
           </select></div>
-        <div className="form-row"><label>MTK (Fälligkeit)</label>
+        {form.mtk_anlage2 !== 'Nein' && (
+          <div className="form-row"><label>MTK (Fälligkeit)</label>
           <input type="date" name="mtk_datum" value={form.mtk_datum} onChange={setMtk} /></div>
+        )}
         <div className="form-row"><label>Wartung (Fälligkeit)</label>
           <input type="date" name="wartung_datum" value={form.wartung_datum} onChange={setWart} /></div>
 

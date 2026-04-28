@@ -170,6 +170,8 @@ migrate('ALTER TABLE hersteller ADD COLUMN email TEXT');
 migrate('ALTER TABLE betreiber ADD COLUMN tel TEXT');
 migrate('ALTER TABLE betreiber ADD COLUMN email TEXT');
 migrate('ALTER TABLE geraete ADD COLUMN betreiber_typ TEXT DEFAULT "Cooperative Mensch"');
+migrate('ALTER TABLE geraete ADD COLUMN stk_anlage1 TEXT DEFAULT "nein"');
+migrate('ALTER TABLE geraete ADD COLUMN stk_datum TEXT');
 migrate('ALTER TABLE geraete ADD COLUMN mtk_anlage2 TEXT DEFAULT "nein"');
 migrate('ALTER TABLE geraete ADD COLUMN mtk_datum TEXT');
 migrate('ALTER TABLE geraete ADD COLUMN wartung_datum TEXT');
@@ -196,7 +198,7 @@ const GERAETE_FIELDS = [
   'aktives_geraet','implantierbar','einmalprodukt','steril',
   'betreiber_id','betreiber','betreiber_anschrift','betreiber_tel','betreiber_email',
   'inventarnummer','verantwortliche_person','netzwerkanbindung','softwareversion','bemerkungen',
-  'betreiber_typ','mtk_anlage2','mtk_datum','wartung_datum',
+  'betreiber_typ','stk_anlage1','stk_datum','mtk_anlage2','mtk_datum','wartung_datum',
 ];
 
 // ── Geräte ────────────────────────────────────────────────────────────────────

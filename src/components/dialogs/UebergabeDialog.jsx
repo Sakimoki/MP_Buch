@@ -35,7 +35,7 @@ export default function UebergabeDialog({ geraetId, onClose, onSaved }) {
 
   return (
     <dialog ref={ref} onCancel={onClose} style={{ width: 520 }}>
-      <div className="dlg-hd">Wartung erfassen</div>
+      <div className="dlg-hd">Lieferschein erfassen</div>
       <div className="dlg-body">
         <div className="form-row"><label>Datum *</label>
           <input type="date" name="datum" value={form.datum} onChange={set} /></div>

@@ -33,10 +33,13 @@ const SECTIONS = [
     ['Verantwortliche Person', 'verantwortliche_person'],
     ['Betreiber', 'betreiber_typ'],
   ]],
-  ['MTK / Anlage 2', [
+  ['MTK/STK/Wartung', [
+    ['Wartung (Fälligkeit)', 'wartung_datum'],
+    ['STK/Anlage 1 Relevant', 'stk_anlage1'],
+    ['STK (Fälligkeit)', 'stk_datum'],
     ['MTK/Anlage2 Relevant', 'mtk_anlage2'],
     ['MTK (Fälligkeit)', 'mtk_datum'],
-    ['Wartung (Fälligkeit)', 'wartung_datum'],
+    ,
   ]],
   ['IT-Sicherheit', [
     ['Netzwerkanbindung', 'netzwerkanbindung', 'bool'],

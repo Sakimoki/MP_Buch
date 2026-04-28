@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getPruefungen, deletePruefung, uploadPruefungsDokument } from '../../api/api.js'
+import { getPruefungen, deletePruefung } from '../../api/api.js'
 import { useApp } from '../../App.jsx'
 import PruefungDialog from '../dialogs/PruefungDialog.jsx'
 
@@ -32,18 +32,7 @@ export default function PruefungenTab({ geraetId }) {
     } catch (e) { alert(e.message) }
   }
 
-  const handleUpload = async () => {
-    if (!selectedId) { alert('Bitte zuerst einen Eintrag auswählen.'); return }
-    if (!fileRef.current?.files?.length) { alert('Bitte zuerst eine Datei auswählen.'); return }
-    try {
-      const fd = new FormData()
-      fd.append('datei', fileRef.current.files[0])
-      await uploadPruefungsDokument(selectedId, fd)
-      fileRef.current.value = ''
-      load()
-      setStatus('Protokoll hochgeladen.')
-    } catch (e) { alert(e.message) }
-  }
+
 
   const rowClass = (p) => {
     const parts = []
@@ -60,10 +49,7 @@ export default function PruefungenTab({ geraetId }) {
           + Eintrag hinzufügen
         </button>
         <button className="del" onClick={handleDelete}>Löschen</button>
-        <span style={{ marginLeft: 8 }}>
-          <input type="file" ref={fileRef} style={{ fontSize: 12 }} />
-          <button className="tbtn" onClick={handleUpload} style={{ marginLeft: 4 }}>Protokoll hochladen</button>
-        </span>
+
       </div>
       <div className="table-scroll">
         <table className="dt">

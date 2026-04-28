@@ -11,8 +11,8 @@ import StorungsmeldungenTab from './tabs/StorungsmeldungenTab.jsx'
 const TABS = [
   { key: 'detail', label: 'Gerätedaten' },
   { key: 'einw',   label: 'Einweisungen' },
-  { key: 'ueberg', label: 'Wartung' },
-  { key: 'pruef',  label: 'MTK/Wartung' },
+  { key: 'ueberg', label: 'Lieferschein' },
+  { key: 'pruef',  label: 'Wartungsbelege' },
   { key: 'dok',    label: 'Gebrauchsanweisungen' },
   { key: 'stoer',  label: 'Störungsmeldungen' },
 ]

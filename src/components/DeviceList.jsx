@@ -14,7 +14,7 @@ export default function DeviceList() {
               <th>Bezeichnung</th>
               <th style={{ width: 80 }}>Typ</th>
               <th style={{ width: 50 }}>Klasse</th>
-              <th style={{ width: 90 }}>Betreiber</th>
+              <th style={{ width: 90 }}>Standort</th>
             </tr>
           </thead>
           <tbody>

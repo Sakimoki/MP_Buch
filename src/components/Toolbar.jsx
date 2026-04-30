@@ -4,7 +4,8 @@ import { useApp } from '../App.jsx'
 import GeraetDialog          from './dialogs/GeraetDialog.jsx'
 import HerstellerDialog      from './dialogs/HerstellerDialog.jsx'
 import BetreiberDialog       from './dialogs/BetreiberDialog.jsx'
-import VorkommnisseOverview  from './VorkommnisseOverview.jsx'
+import VorkommnisseOverview      from './VorkommnisseOverview.jsx'
+import WartungsuebersichtDialog  from './WartungsuebersichtDialog.jsx'
 
 export default function Toolbar() {
   const { selectedGeraetId, setSelectedGeraetId, searchQuery, setSearchQuery, loadGeraete, setStatus } = useApp()
@@ -97,6 +98,7 @@ export default function Toolbar() {
       <button className="tbtn" title="Betreiber-Stammdaten"  onClick={() => setDialog('betreiber')}>🏥 Betreiber</button>
       <button className="tbtn" title="Druckbare Bestandsliste" onClick={openBestandsliste}>📋 Bestandsliste</button>
       <button className="tbtn" title="Vorkommnisse – Übersicht" onClick={() => setDialog('vorkommnisse')}>⚠️ Vorkommnisse</button>
+      <button className="tbtn" title="Wartungsübersicht – Anstehende Prüfungen" onClick={() => setDialog('wartung')}>📅 Wartungen</button>
       <div id="search-wrap">
         <label htmlFor="search-input">Suche:</label>
         <input
@@ -116,7 +118,8 @@ export default function Toolbar() {
       )}
       {dialog === 'hersteller'    && <HerstellerDialog     onClose={() => setDialog(null)} />}
       {dialog === 'betreiber'     && <BetreiberDialog      onClose={() => setDialog(null)} />}
-      {dialog === 'vorkommnisse'  && <VorkommnisseOverview onClose={() => setDialog(null)} />}
+      {dialog === 'vorkommnisse'  && <VorkommnisseOverview     onClose={() => setDialog(null)} />}
+      {dialog === 'wartung'       && <WartungsuebersichtDialog onClose={() => setDialog(null)} />}
     </>
   )
 }

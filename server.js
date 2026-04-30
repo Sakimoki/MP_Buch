@@ -178,6 +178,8 @@ migrate('ALTER TABLE geraete ADD COLUMN wartung_datum TEXT');
 migrate('ALTER TABLE pruefungen ADD COLUMN firma TEXT');
 migrate('ALTER TABLE pruefungen ADD COLUMN datei_name TEXT');
 migrate('ALTER TABLE pruefungen ADD COLUMN datei_pfad TEXT');
+migrate('ALTER TABLE vorkommnisse ADD COLUMN erledigt INTEGER DEFAULT 0');
+migrate('ALTER TABLE stoerungsmeldungen ADD COLUMN erledigt INTEGER DEFAULT 0');
 
 // ── Express ───────────────────────────────────────────────────────────────────
 
@@ -392,6 +394,15 @@ app.delete('/api/pruefungen/:id', (req, res) => {
 
 // ── Vorkommnisse ──────────────────────────────────────────────────────────────
 
+app.get('/api/geraete/:id/vorkommnisse', (req, res) => {
+  res.json(db.prepare(`
+    SELECT id, datum, art_stoerung, folgen,
+           meldung_behoerde, meldung_hersteller,
+           korrektivmassnahmen, bemerkungen
+    FROM vorkommnisse WHERE geraet_id = ? ORDER BY datum DESC
+  `).all(+req.params.id));
+});
+
 app.get('/api/vorkommnisse', (req, res) => {
   res.json(db.prepare(`
     SELECT v.id, v.datum, v.art_stoerung, v.folgen,
@@ -418,9 +429,58 @@ app.post('/api/vorkommnisse', (req, res) => {
   res.status(201).json({ id: Number(r.lastInsertRowid) });
 });
 
+app.put('/api/vorkommnisse/:id', (req, res) => {
+  const b = req.body;
+  db.prepare(`
+    UPDATE vorkommnisse SET datum=?, art_stoerung=?, folgen=?,
+      meldung_behoerde=?, meldung_hersteller=?, korrektivmassnahmen=?,
+      bemerkungen=?, erledigt=? WHERE id=?
+  `).run(b.datum, b.art_stoerung||null, b.folgen||null,
+         b.meldung_behoerde||null, b.meldung_hersteller||null,
+         b.korrektivmassnahmen||null, b.bemerkungen||null,
+         b.erledigt ? 1 : 0, +req.params.id);
+  res.json({ success: true });
+});
+
 app.delete('/api/vorkommnisse/:id', (req, res) => {
   db.prepare('DELETE FROM vorkommnisse WHERE id = ?').run(+req.params.id);
   res.json({ success: true });
+});
+
+// ── Vorkommnisse Übersicht (UNION: Vorkommnisse + Störungsmeldungen) ──────────
+
+app.get('/api/geraete/:id/vorkommnisse-uebersicht', (req, res) => {
+  res.json(db.prepare(`
+    SELECT 'Vorkommnis' AS typ, id, datum, art_stoerung, bemerkungen,
+           meldung_behoerde, meldung_hersteller
+    FROM vorkommnisse WHERE geraet_id = ?
+    UNION ALL
+    SELECT 'Störungsmeldung' AS typ, id, datum, art_stoerung, bemerkungen,
+           NULL AS meldung_behoerde, NULL AS meldung_hersteller
+    FROM stoerungsmeldungen WHERE geraet_id = ?
+    ORDER BY datum DESC
+  `).all(+req.params.id, +req.params.id));
+});
+
+// ── Globale Vorkommnisse-Übersicht (alle Geräte, alle Typen) ──────────────────
+
+app.get('/api/vorkommnisse-global', (req, res) => {
+  res.json(db.prepare(`
+    SELECT 'Vorkommnis' AS typ, v.id, v.datum, v.art_stoerung, v.bemerkungen,
+           v.meldung_behoerde, v.meldung_hersteller,
+           v.folgen, v.korrektivmassnahmen, v.erledigt,
+           v.geraet_id, g.bezeichnung AS geraet_bezeichnung, g.inventarnummer
+    FROM vorkommnisse v
+    LEFT JOIN geraete g ON g.id = v.geraet_id
+    UNION ALL
+    SELECT 'Störungsmeldung' AS typ, s.id, s.datum, s.art_stoerung, s.bemerkungen,
+           NULL AS meldung_behoerde, NULL AS meldung_hersteller,
+           NULL AS folgen, NULL AS korrektivmassnahmen, s.erledigt,
+           s.geraet_id, g.bezeichnung AS geraet_bezeichnung, g.inventarnummer
+    FROM stoerungsmeldungen s
+    LEFT JOIN geraete g ON g.id = s.geraet_id
+    ORDER BY datum DESC
+  `).all());
 });
 
 // ── Störungsmeldungen ─────────────────────────────────────────────────────────
@@ -440,6 +500,15 @@ app.post('/api/stoerungsmeldungen', (req, res) => {
     VALUES (?,?,?,?,?)
   `).run(b.geraet_id, b.datum, b.art_stoerung||null, b.bemerkungen||null, nowTs());
   res.status(201).json({ id: Number(r.lastInsertRowid) });
+});
+
+app.put('/api/stoerungsmeldungen/:id', (req, res) => {
+  const b = req.body;
+  db.prepare(`
+    UPDATE stoerungsmeldungen SET datum=?, art_stoerung=?, bemerkungen=?, erledigt=? WHERE id=?
+  `).run(b.datum, b.art_stoerung||null, b.bemerkungen||null,
+         b.erledigt ? 1 : 0, +req.params.id);
+  res.json({ success: true });
 });
 
 app.delete('/api/stoerungsmeldungen/:id', (req, res) => {
@@ -521,6 +590,28 @@ app.put('/api/betreiber/:id', (req, res) => {
 app.delete('/api/betreiber/:id', (req, res) => {
   db.prepare('DELETE FROM betreiber WHERE id = ?').run(+req.params.id);
   res.json({ success: true });
+});
+
+// ── Wartungsübersicht (anstehende Fälligkeiten) ───────────────────────────────
+
+app.get('/api/wartungen-faellig', (req, res) => {
+  const heute = new Date().toISOString().slice(0, 10);
+  const von = req.query.von || heute;
+  const bis = req.query.bis || new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10);
+  res.json(db.prepare(`
+    SELECT p.id, p.art, p.datum AS letzte_pruefung, p.naechste_faelligkeit,
+           p.pruefer, p.firma,
+           g.id AS geraet_id, g.bezeichnung, g.art_typ,
+           g.inventarnummer, g.betreiber
+    FROM pruefungen p
+    JOIN geraete g ON g.id = p.geraet_id
+    WHERE p.naechste_faelligkeit BETWEEN ? AND ?
+      AND p.id = (
+        SELECT MAX(p2.id) FROM pruefungen p2
+        WHERE p2.geraet_id = p.geraet_id AND p2.art = p.art
+      )
+    ORDER BY p.naechste_faelligkeit ASC
+  `).all(von, bis));
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

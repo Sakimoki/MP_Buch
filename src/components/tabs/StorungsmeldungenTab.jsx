@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getStoerungsmeldungen, deleteStoerungsmeldung } from '../../api/api.js'
 import { useApp } from '../../App.jsx'
-import StorungsmeldungDialog from '../dialogs/StorungsmeldungDialog.jsx'
+import StorungsmeldungDialog from '../dialogs/StoerungsmeldungDialog.jsx'
 
 export default function StorungsmeldungenTab({ geraetId }) {
   const { setStatus } = useApp()
